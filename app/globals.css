@@ -1,0 +1,63 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  background: #fbf3ea;
+  font-family: var(--font-quicksand), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #4a3b33;
+  overscroll-behavior-y: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Hide scrollbar on the main scroll area while keeping scroll */
+.screen-scroll {
+  scrollbar-width: none;
+}
+.screen-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes bftSheet {
+  from {
+    transform: translateY(102%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes bftFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bftToast {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
