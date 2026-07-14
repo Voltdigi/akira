@@ -13,6 +13,7 @@ import { formatAmount, stepMl } from "@/lib/units";
 import {
   applyHhmm,
   dateLabelFor,
+  fmtDuration,
   fmtTime,
   greetingFor,
   timeSince,
@@ -74,13 +75,13 @@ export default function FeedTracker() {
     setFlow("edit");
   };
 
-  const logBreast = () => {
-    addFeed("breast", null, null);
+  const stopBreast = (durationSec: number) => {
+    addFeed("breast", { durationSec });
     close();
-    showToast("Breast feed logged 💗");
+    showToast(`Breast feed logged 💗 ${fmtDuration(durationSec)}`);
   };
   const logBottle = () => {
-    addFeed("bottle", mlDraft, isFormulaDraft);
+    addFeed("bottle", { ml: mlDraft, isFormula: isFormulaDraft });
     close();
     showToast("Bottle feed logged 🍼");
   };
@@ -185,6 +186,7 @@ export default function FeedTracker() {
                   {last.type === "bottle" ? "Bottle" : "Breast"}
                   {last.type === "bottle" && last.ml ? ` · ${formatAmount(last.ml, unit)} ${unit}` : ""}
                   {last.type === "bottle" && last.is_formula ? " · Formula" : ""}
+                  {last.type === "breast" && last.duration_sec ? ` · ${fmtDuration(last.duration_sec)}` : ""}
                 </span>
               </>
             ) : (
@@ -258,6 +260,7 @@ export default function FeedTracker() {
                     {f.type === "bottle" && f.is_formula ? (
                       <div style={{ fontSize: 11, color: t.muted, fontWeight: 700, marginTop: 1 }}>Formula</div>
                     ) : null}
+                    {f.type === "breast" && f.duration_sec ? fmtDuration(f.duration_sec) : ""}
                   </div>
                 </button>
               ))}
@@ -334,8 +337,9 @@ export default function FeedTracker() {
             setIsFormulaDraft(false);
             setFlow("bottle");
           }}
-          onChooseBreast={logBreast}
+          onChooseBreast={() => setFlow("breast")}
           onLogBottle={logBottle}
+          onStopBreast={stopBreast}
           onSave={saveEdit}
           onDelete={removeEdit}
           onClose={close}

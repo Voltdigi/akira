@@ -9,4 +9,6 @@ export interface Feed {
   ml: number | null;
   /** Whether a bottle feed was formula; null for breast feeds. */
   is_formula: boolean | null;
+  /** Duration in seconds for breast feeds; null for bottle feeds. */
+  duration_sec: number | null;
 }

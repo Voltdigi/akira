@@ -81,6 +81,17 @@ export function greetingFor(ms: number): string {
   return "Good night";
 }
 
+/** "45s", "12m 34s", or "1h 05m" for a logged feed's duration. */
+export function fmtDuration(totalSec: number): string {
+  const s = Math.max(0, Math.round(totalSec));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
+  if (m > 0) return `${m}m ${String(sec).padStart(2, "0")}s`;
+  return `${sec}s`;
+}
+
 export function dateLabelFor(ms: number): string {
   return new Date(ms).toLocaleDateString("en-US", {
     weekday: "long",

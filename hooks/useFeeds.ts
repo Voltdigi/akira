@@ -20,7 +20,7 @@ export function useFeeds() {
 
     supabase
       .from(TABLE)
-      .select("id, time, type, ml, is_formula")
+      .select("id, time, type, ml, is_formula, duration_sec")
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) console.error("Failed to load feeds:", error.message);
@@ -52,22 +52,26 @@ export function useFeeds() {
     };
   }, []);
 
-  const addFeed = useCallback((type: FeedType, ml: number | null, isFormula: boolean | null) => {
-    const feed: Feed = {
-      id: crypto.randomUUID(),
-      time: Date.now(),
-      type,
-      ml: type === "bottle" ? ml ?? 0 : null,
-      is_formula: type === "bottle" ? isFormula ?? false : null,
-    };
-    setFeeds((prev) => [...prev, feed]);
-    supabase
-      .from(TABLE)
-      .insert(feed)
-      .then(({ error }) => {
-        if (error) console.error("Failed to save feed:", error.message);
-      });
-  }, []);
+  const addFeed = useCallback(
+    (type: FeedType, opts: { ml?: number | null; isFormula?: boolean | null; durationSec?: number | null } = {}) => {
+      const feed: Feed = {
+        id: crypto.randomUUID(),
+        time: Date.now(),
+        type,
+        ml: type === "bottle" ? opts.ml ?? 0 : null,
+        is_formula: type === "bottle" ? opts.isFormula ?? false : null,
+        duration_sec: type === "breast" ? opts.durationSec ?? null : null,
+      };
+      setFeeds((prev) => [...prev, feed]);
+      supabase
+        .from(TABLE)
+        .insert(feed)
+        .then(({ error }) => {
+          if (error) console.error("Failed to save feed:", error.message);
+        });
+    },
+    []
+  );
 
   const deleteFeed = useCallback((id: string) => {
     setFeeds((prev) => prev.filter((f) => f.id !== id));

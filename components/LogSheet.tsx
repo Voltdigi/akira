@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { theme as t } from "@/lib/theme";
 import { formatAmount, presetsFor, type Unit } from "@/lib/units";
 
-export type SheetFlow = "choose" | "bottle" | "edit";
+export type SheetFlow = "choose" | "bottle" | "breast" | "edit";
 
 interface Props {
   flow: SheetFlow;
@@ -30,6 +31,7 @@ interface Props {
   onChooseBottle: () => void;
   onChooseBreast: () => void;
   onLogBottle: () => void;
+  onStopBreast: (durationSec: number) => void;
   onSave: () => void;
   onDelete: () => void;
   onClose: () => void;
@@ -81,10 +83,12 @@ export default function LogSheet(p: Props) {
             </div>
             <div style={{ display: "flex", gap: 14 }}>
               <ChoiceCard icon="🍼" title="Bottle" sub="enter amount" onClick={p.onChooseBottle} />
-              <ChoiceCard icon="🤱" title="Breast" sub="logs instantly" onClick={p.onChooseBreast} />
+              <ChoiceCard icon="🤱" title="Breast" sub="time it" onClick={p.onChooseBreast} />
             </div>
           </>
         )}
+
+        {p.flow === "breast" && <BreastTimer onStop={p.onStopBreast} />}
 
         {p.flow === "bottle" && (
           <>
@@ -248,6 +252,107 @@ function ChoiceCard({
       <span style={{ fontWeight: 700, fontSize: 15, fontFamily: t.head }}>{title}</span>
       <span style={{ fontSize: 11, color: t.muted, fontWeight: 600 }}>{sub}</span>
     </button>
+  );
+}
+
+type TimerStatus = "idle" | "running" | "paused";
+
+/** "MM:SS" (or "H:MM:SS" past an hour), ticking once a second. */
+function fmtStopwatch(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
+  const ss = String(s).padStart(2, "0");
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+function BreastTimer({ onStop }: { onStop: (durationSec: number) => void }) {
+  const [status, setStatus] = useState<TimerStatus>("idle");
+  const [accumulatedMs, setAccumulatedMs] = useState(0);
+  const [runStart, setRunStart] = useState<number | null>(null);
+  const [displayMs, setDisplayMs] = useState(0);
+
+  useEffect(() => {
+    if (status !== "running" || runStart === null) {
+      setDisplayMs(accumulatedMs);
+      return;
+    }
+    const tick = () => setDisplayMs(accumulatedMs + (Date.now() - runStart));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [status, accumulatedMs, runStart]);
+
+  const start = () => {
+    setRunStart(Date.now());
+    setStatus("running");
+  };
+  const pause = () => {
+    setAccumulatedMs((ms) => ms + (runStart ? Date.now() - runStart : 0));
+    setRunStart(null);
+    setStatus("paused");
+  };
+  const stop = () => {
+    const finalMs = status === "running" && runStart ? accumulatedMs + (Date.now() - runStart) : accumulatedMs;
+    onStop(Math.round(finalMs / 1000));
+  };
+
+  const statusLabel = status === "running" ? "Timing…" : status === "paused" ? "Paused" : "Ready to start";
+
+  return (
+    <>
+      <div style={{ fontFamily: t.head, fontSize: 21, fontWeight: 700, textAlign: "center" }}>
+        Breast feed 🤱
+      </div>
+      <div style={{ textAlign: "center", margin: "22px 0 6px" }}>
+        <span style={{ fontFamily: t.head, fontSize: 52, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+          {fmtStopwatch(displayMs)}
+        </span>
+      </div>
+      <div style={{ textAlign: "center", color: t.muted, fontSize: 13, fontWeight: 600, marginBottom: 24 }}>
+        {statusLabel}
+      </div>
+      <div style={{ display: "flex", gap: 12 }}>
+        <button
+          onClick={status === "running" ? pause : start}
+          style={{
+            flex: 1,
+            padding: 15,
+            borderRadius: 18,
+            border: `2px solid ${t.border}`,
+            background: t.surface2,
+            color: t.text,
+            fontWeight: 700,
+            fontSize: 15,
+            cursor: "pointer",
+            fontFamily: t.head,
+          }}
+        >
+          {status === "running" ? "Pause" : status === "paused" ? "Resume" : "Start"}
+        </button>
+        <button
+          onClick={stop}
+          disabled={displayMs === 0}
+          style={{
+            flex: 1.4,
+            padding: 15,
+            borderRadius: 18,
+            border: "none",
+            background: t.btn,
+            color: t.accentText,
+            fontWeight: 700,
+            fontSize: 15,
+            cursor: displayMs === 0 ? "default" : "pointer",
+            fontFamily: t.head,
+            opacity: displayMs === 0 ? 0.5 : 1,
+          }}
+        >
+          Stop & log
+        </button>
+      </div>
+    </>
   );
 }
 
