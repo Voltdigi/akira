@@ -257,6 +257,12 @@ function ChoiceCard({
 
 type TimerStatus = "idle" | "running" | "paused";
 
+const TIMER_COLORS = {
+  start: "#4CAF7D",
+  pause: "#9AA0A6",
+  stop: t.danger,
+};
+
 /** "MM:SS" (or "H:MM:SS" past an hour), ticking once a second. */
 function fmtStopwatch(ms: number): string {
   const totalSec = Math.floor(ms / 1000);
@@ -321,9 +327,9 @@ function BreastTimer({ onStop }: { onStop: (durationSec: number) => void }) {
             flex: 1,
             padding: 15,
             borderRadius: 18,
-            border: `2px solid ${t.border}`,
-            background: t.surface2,
-            color: t.text,
+            border: "none",
+            background: status === "running" ? TIMER_COLORS.pause : TIMER_COLORS.start,
+            color: "#fff",
             fontWeight: 700,
             fontSize: 15,
             cursor: "pointer",
@@ -340,8 +346,8 @@ function BreastTimer({ onStop }: { onStop: (durationSec: number) => void }) {
             padding: 15,
             borderRadius: 18,
             border: "none",
-            background: t.btn,
-            color: t.accentText,
+            background: TIMER_COLORS.stop,
+            color: "#fff",
             fontWeight: 700,
             fontSize: 15,
             cursor: displayMs === 0 ? "default" : "pointer",
