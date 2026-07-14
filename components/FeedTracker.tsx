@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import Screen from "@/components/Screen";
 import LogSheet, { SheetFlow } from "@/components/LogSheet";
 import { useFeeds } from "@/hooks/useFeeds";
+import { useClockFormat } from "@/hooks/useClockFormat";
 import { theme as t } from "@/lib/theme";
 import type { Feed } from "@/lib/types";
 import {
@@ -18,6 +21,7 @@ import {
 
 export default function FeedTracker() {
   const { feeds, loaded, addFeed, deleteFeed, updateFeed } = useFeeds();
+  const { hour12 } = useClockFormat();
 
   // live "now" so the hero clock ticks
   const [now, setNow] = useState(() => Date.now());
@@ -89,17 +93,7 @@ export default function FeedTracker() {
   };
 
   return (
-    <div
-      style={{
-        position: "relative",
-        width: "100%",
-        minHeight: "100dvh",
-        background: t.bg,
-        fontFamily: t.font,
-        color: t.text,
-        overflow: "hidden",
-      }}
-    >
+    <Screen>
       <div
         className="screen-scroll"
         style={{
@@ -118,7 +112,9 @@ export default function FeedTracker() {
             <div style={{ fontSize: 13, color: t.muted, fontWeight: 600 }}>{dateLabelFor(now)}</div>
             <div style={{ fontFamily: t.head, fontSize: 23, fontWeight: 700, marginTop: 2 }}>{greetingFor(now)}</div>
           </div>
-          <div
+          <Link
+            href="/settings"
+            aria-label="Settings"
             style={{
               width: 46,
               height: 46,
@@ -128,10 +124,11 @@ export default function FeedTracker() {
               alignItems: "center",
               justifyContent: "center",
               fontSize: 24,
+              textDecoration: "none",
             }}
           >
             👶
-          </div>
+          </Link>
         </div>
 
         {/* hero */}
@@ -243,7 +240,7 @@ export default function FeedTracker() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>{f.type === "bottle" ? "Bottle feed" : "Breast feed"}</div>
-                    <div style={{ fontSize: 12, color: t.muted, fontWeight: 600, marginTop: 1 }}>{fmtTime(f.time)}</div>
+                    <div style={{ fontSize: 12, color: t.muted, fontWeight: 600, marginTop: 1 }}>{fmtTime(f.time, hour12)}</div>
                   </div>
                   <div style={{ fontWeight: 700, fontSize: 14, color: t.accentDeep }}>
                     {f.type === "bottle" && f.ml ? `${f.ml} ml` : ""}
@@ -348,7 +345,7 @@ export default function FeedTracker() {
           {toast}
         </div>
       )}
-    </div>
+    </Screen>
   );
 }
 

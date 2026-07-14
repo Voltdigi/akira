@@ -1,13 +1,14 @@
 import type { Feed } from "./types";
 
-/** 12-hour clock, e.g. "2:15 PM". */
-export function fmtTime(ms: number): string {
+/** "2:15 PM" (12h) or "14:15" (24h), depending on the user's clock preference. */
+export function fmtTime(ms: number, hour12 = true): string {
   const d = new Date(ms);
-  let h = d.getHours();
+  const h = d.getHours();
   const m = d.getMinutes();
+  if (!hour12) return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   const ap = h < 12 ? "AM" : "PM";
-  h = h % 12 || 12;
-  return `${h}:${String(m).padStart(2, "0")} ${ap}`;
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${ap}`;
 }
 
 /** Big/small parts for the "time since last feed" hero. */
