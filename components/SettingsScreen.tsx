@@ -3,10 +3,12 @@
 import Link from "next/link";
 import Screen from "@/components/Screen";
 import { useClockFormat } from "@/hooks/useClockFormat";
+import { useUnit } from "@/hooks/useUnit";
 import { theme as t } from "@/lib/theme";
 
 export default function SettingsScreen() {
-  const { hour12, setHour12, loaded } = useClockFormat();
+  const { hour12, setHour12, loaded: clockLoaded } = useClockFormat();
+  const { unit, setUnit, loaded: unitLoaded } = useUnit();
 
   return (
     <Screen>
@@ -56,7 +58,7 @@ export default function SettingsScreen() {
             border: `1px solid ${t.border}`,
             borderRadius: 20,
             padding: "16px 18px",
-            opacity: loaded ? 1 : 0.5,
+            opacity: clockLoaded ? 1 : 0.5,
           }}
         >
           <div>
@@ -65,7 +67,35 @@ export default function SettingsScreen() {
               {hour12 ? "Times show as 2:15 PM" : "Times show as 14:15"}
             </div>
           </div>
-          <ToggleSwitch checked={!hour12} onChange={(v) => setHour12(!v)} disabled={!loaded} />
+          <ToggleSwitch checked={!hour12} onChange={(v) => setHour12(!v)} disabled={!clockLoaded} />
+        </div>
+
+        {/* unit */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 14,
+            background: t.surface,
+            border: `1px solid ${t.border}`,
+            borderRadius: 20,
+            padding: "16px 18px",
+            marginTop: 12,
+            opacity: unitLoaded ? 1 : 0.5,
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>Ounces</div>
+            <div style={{ fontSize: 12, color: t.muted, fontWeight: 600, marginTop: 2 }}>
+              {unit === "oz" ? "Bottle amounts show as oz" : "Bottle amounts show as ml"}
+            </div>
+          </div>
+          <ToggleSwitch
+            checked={unit === "oz"}
+            onChange={(v) => setUnit(v ? "oz" : "ml")}
+            disabled={!unitLoaded}
+          />
         </div>
       </div>
     </Screen>

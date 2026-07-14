@@ -6,8 +6,10 @@ import Screen from "@/components/Screen";
 import LogSheet, { SheetFlow } from "@/components/LogSheet";
 import { useFeeds } from "@/hooks/useFeeds";
 import { useClockFormat } from "@/hooks/useClockFormat";
+import { useUnit } from "@/hooks/useUnit";
 import { theme as t } from "@/lib/theme";
 import type { Feed } from "@/lib/types";
+import { formatAmount, stepMl } from "@/lib/units";
 import {
   applyHhmm,
   dateLabelFor,
@@ -22,6 +24,8 @@ import {
 export default function FeedTracker() {
   const { feeds, loaded, addFeed, deleteFeed, updateFeed } = useFeeds();
   const { hour12 } = useClockFormat();
+  const { unit } = useUnit();
+  const step = stepMl(unit);
 
   // live "now" so the hero clock ticks
   const [now, setNow] = useState(() => Date.now());
@@ -173,7 +177,7 @@ export default function FeedTracker() {
                 <span style={{ fontSize: 15 }}>{last.type === "bottle" ? "🍼" : "🤱"}</span>
                 <span>
                   {last.type === "bottle" ? "Bottle" : "Breast"}
-                  {last.type === "bottle" && last.ml ? ` · ${last.ml} ml` : ""}
+                  {last.type === "bottle" && last.ml ? ` · ${formatAmount(last.ml, unit)} ${unit}` : ""}
                 </span>
               </>
             ) : (
@@ -185,7 +189,7 @@ export default function FeedTracker() {
         {/* stats */}
         <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
           <StatCard value={String(todayCount)} label="feeds today" />
-          <StatCard value={String(todayMl)} unit="ml" label="bottle today" />
+          <StatCard value={formatAmount(todayMl, unit)} unit={unit} label="bottle today" />
         </div>
 
         {/* trend */}
@@ -243,7 +247,7 @@ export default function FeedTracker() {
                     <div style={{ fontSize: 12, color: t.muted, fontWeight: 600, marginTop: 1 }}>{fmtTime(f.time, hour12)}</div>
                   </div>
                   <div style={{ fontWeight: 700, fontSize: 14, color: t.accentDeep }}>
-                    {f.type === "bottle" && f.ml ? `${f.ml} ml` : ""}
+                    {f.type === "bottle" && f.ml ? `${formatAmount(f.ml, unit)} ${unit}` : ""}
                   </div>
                 </button>
               ))}
@@ -298,13 +302,14 @@ export default function FeedTracker() {
       {flow && (
         <LogSheet
           flow={flow}
+          unit={unit}
           mlDraft={mlDraft}
           setMl={setMlDraft}
-          incMl={() => setMlDraft((n) => Math.min(400, n + 10))}
-          decMl={() => setMlDraft((n) => Math.max(10, n - 10))}
+          incMl={() => setMlDraft((n) => Math.min(400, n + step))}
+          decMl={() => setMlDraft((n) => Math.max(10, n - step))}
           editMl={editMl}
-          editIncMl={() => setEditMl((n) => Math.min(400, n + 10))}
-          editDecMl={() => setEditMl((n) => Math.max(10, n - 10))}
+          editIncMl={() => setEditMl((n) => Math.min(400, n + step))}
+          editDecMl={() => setEditMl((n) => Math.max(10, n - step))}
           editTime={editTime}
           setEditTime={setEditTime}
           editIsBottle={editType === "bottle"}

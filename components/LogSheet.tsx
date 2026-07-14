@@ -1,13 +1,13 @@
 "use client";
 
 import { theme as t } from "@/lib/theme";
-
-const PRESETS = [60, 90, 120, 150, 180];
+import { formatAmount, presetsFor, type Unit } from "@/lib/units";
 
 export type SheetFlow = "choose" | "bottle" | "edit";
 
 interface Props {
   flow: SheetFlow;
+  unit: Unit;
   // bottle draft
   mlDraft: number;
   setMl: (n: number) => void;
@@ -88,20 +88,22 @@ export default function LogSheet(p: Props) {
               Bottle feed 🍼
             </div>
             <div style={{ textAlign: "center", margin: "18px 0 4px" }}>
-              <span style={{ fontFamily: t.head, fontSize: 60, fontWeight: 700, lineHeight: 1 }}>{p.mlDraft}</span>
-              <span style={{ fontSize: 22, fontWeight: 700, color: t.muted, marginLeft: 6 }}>ml</span>
+              <span style={{ fontFamily: t.head, fontSize: 60, fontWeight: 700, lineHeight: 1 }}>
+                {formatAmount(p.mlDraft, p.unit)}
+              </span>
+              <span style={{ fontSize: 22, fontWeight: 700, color: t.muted, marginLeft: 6 }}>{p.unit}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 26, margin: "16px 0 20px" }}>
               <button onClick={p.decMl} style={{ ...roundBtn, width: 56, height: 56, fontSize: 30 }}>−</button>
               <button onClick={p.incMl} style={{ ...roundBtn, width: 56, height: 56, fontSize: 30 }}>+</button>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 22 }}>
-              {PRESETS.map((v) => {
-                const active = p.mlDraft === v;
+              {presetsFor(p.unit).map((preset) => {
+                const active = p.mlDraft === preset.ml;
                 return (
                   <button
-                    key={v}
-                    onClick={() => p.setMl(v)}
+                    key={preset.label}
+                    onClick={() => p.setMl(preset.ml)}
                     style={{
                       padding: "9px 15px",
                       borderRadius: 999,
@@ -113,7 +115,7 @@ export default function LogSheet(p: Props) {
                       cursor: "pointer",
                     }}
                   >
-                    {v} ml
+                    {preset.label}
                   </button>
                 );
               })}
@@ -132,8 +134,10 @@ export default function LogSheet(p: Props) {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 22, marginBottom: 18 }}>
                 <button onClick={p.editDecMl} style={{ ...roundBtn, width: 50, height: 50, fontSize: 26 }}>−</button>
                 <div style={{ minWidth: 96, textAlign: "center" }}>
-                  <span style={{ fontFamily: t.head, fontSize: 34, fontWeight: 700 }}>{p.editMl}</span>
-                  <span style={{ fontSize: 15, color: t.muted, fontWeight: 700, marginLeft: 4 }}>ml</span>
+                  <span style={{ fontFamily: t.head, fontSize: 34, fontWeight: 700 }}>
+                    {formatAmount(p.editMl, p.unit)}
+                  </span>
+                  <span style={{ fontSize: 15, color: t.muted, fontWeight: 700, marginLeft: 4 }}>{p.unit}</span>
                 </div>
                 <button onClick={p.editIncMl} style={{ ...roundBtn, width: 50, height: 50, fontSize: 26 }}>+</button>
               </div>
