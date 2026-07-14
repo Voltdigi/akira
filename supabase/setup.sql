@@ -5,8 +5,12 @@ create table if not exists public.feeds (
   time bigint not null,        -- epoch milliseconds of the feed
   type text not null check (type in ('breast', 'bottle')),
   ml integer,                  -- amount in ml for bottle feeds; null for breast
+  is_formula boolean,          -- true/false for bottle feeds; null for breast
   created_at timestamptz not null default now()
 );
+
+-- Migrating a table created before is_formula existed? Run just this line:
+-- alter table public.feeds add column if not exists is_formula boolean;
 
 -- No login: table is open to anyone with the project's anon key.
 alter table public.feeds enable row level security;

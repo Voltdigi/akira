@@ -37,8 +37,10 @@ export default function FeedTracker() {
   // flow / drafts
   const [flow, setFlow] = useState<SheetFlow | null>(null);
   const [mlDraft, setMlDraft] = useState(120);
+  const [isFormulaDraft, setIsFormulaDraft] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editMl, setEditMl] = useState(120);
+  const [editIsFormula, setEditIsFormula] = useState(false);
   const [editTime, setEditTime] = useState("12:00");
   const [editType, setEditType] = useState<Feed["type"]>("bottle");
 
@@ -66,18 +68,19 @@ export default function FeedTracker() {
   const openEdit = (f: Feed) => {
     setEditId(f.id);
     setEditMl(f.ml ?? 120);
+    setEditIsFormula(f.is_formula ?? false);
     setEditType(f.type);
     setEditTime(toHhmm(f.time));
     setFlow("edit");
   };
 
   const logBreast = () => {
-    addFeed("breast", null);
+    addFeed("breast", null, null);
     close();
     showToast("Breast feed logged 💗");
   };
   const logBottle = () => {
-    addFeed("bottle", mlDraft);
+    addFeed("bottle", mlDraft, isFormulaDraft);
     close();
     showToast("Bottle feed logged 🍼");
   };
@@ -85,7 +88,10 @@ export default function FeedTracker() {
     const f = feeds.find((x) => x.id === editId);
     if (!f || !editId) return close();
     const patch: Partial<Feed> = { time: applyHhmm(f.time, editTime) };
-    if (editType === "bottle") patch.ml = editMl;
+    if (editType === "bottle") {
+      patch.ml = editMl;
+      patch.is_formula = editIsFormula;
+    }
     updateFeed(editId, patch);
     close();
     showToast("Feed updated ✓");
@@ -178,6 +184,7 @@ export default function FeedTracker() {
                 <span>
                   {last.type === "bottle" ? "Bottle" : "Breast"}
                   {last.type === "bottle" && last.ml ? ` · ${formatAmount(last.ml, unit)} ${unit}` : ""}
+                  {last.type === "bottle" && last.is_formula ? " · Formula" : ""}
                 </span>
               </>
             ) : (
@@ -246,8 +253,11 @@ export default function FeedTracker() {
                     <div style={{ fontWeight: 700, fontSize: 14 }}>{f.type === "bottle" ? "Bottle feed" : "Breast feed"}</div>
                     <div style={{ fontSize: 12, color: t.muted, fontWeight: 600, marginTop: 1 }}>{fmtTime(f.time, hour12)}</div>
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: t.accentDeep }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: t.accentDeep, textAlign: "right" }}>
                     {f.type === "bottle" && f.ml ? `${formatAmount(f.ml, unit)} ${unit}` : ""}
+                    {f.type === "bottle" && f.is_formula ? (
+                      <div style={{ fontSize: 11, color: t.muted, fontWeight: 700, marginTop: 1 }}>Formula</div>
+                    ) : null}
                   </div>
                 </button>
               ))}
@@ -307,9 +317,13 @@ export default function FeedTracker() {
           setMl={setMlDraft}
           incMl={() => setMlDraft((n) => Math.min(400, n + step))}
           decMl={() => setMlDraft((n) => Math.max(10, n - step))}
+          isFormula={isFormulaDraft}
+          setIsFormula={setIsFormulaDraft}
           editMl={editMl}
           editIncMl={() => setEditMl((n) => Math.min(400, n + step))}
           editDecMl={() => setEditMl((n) => Math.max(10, n - step))}
+          editIsFormula={editIsFormula}
+          setEditIsFormula={setEditIsFormula}
           editTime={editTime}
           setEditTime={setEditTime}
           editIsBottle={editType === "bottle"}
@@ -317,6 +331,7 @@ export default function FeedTracker() {
           editTitle={editType === "bottle" ? "Bottle feed" : "Breast feed"}
           onChooseBottle={() => {
             setMlDraft(120);
+            setIsFormulaDraft(false);
             setFlow("bottle");
           }}
           onChooseBreast={logBreast}

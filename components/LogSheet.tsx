@@ -13,10 +13,14 @@ interface Props {
   setMl: (n: number) => void;
   incMl: () => void;
   decMl: () => void;
+  isFormula: boolean;
+  setIsFormula: (v: boolean) => void;
   // edit draft
   editMl: number;
   editIncMl: () => void;
   editDecMl: () => void;
+  editIsFormula: boolean;
+  setEditIsFormula: (v: boolean) => void;
   editTime: string;
   setEditTime: (v: string) => void;
   editIsBottle: boolean;
@@ -120,6 +124,9 @@ export default function LogSheet(p: Props) {
                 );
               })}
             </div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+              <Checkbox checked={p.isFormula} onChange={p.setIsFormula} label="Formula" />
+            </div>
             <PrimaryButton onClick={p.onLogBottle}>Log bottle feed</PrimaryButton>
           </>
         )}
@@ -140,6 +147,11 @@ export default function LogSheet(p: Props) {
                   <span style={{ fontSize: 15, color: t.muted, fontWeight: 700, marginLeft: 4 }}>{p.unit}</span>
                 </div>
                 <button onClick={p.editIncMl} style={{ ...roundBtn, width: 50, height: 50, fontSize: 26 }}>+</button>
+              </div>
+            )}
+            {p.editIsBottle && (
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+                <Checkbox checked={p.editIsFormula} onChange={p.setEditIsFormula} label="Formula" />
               </div>
             )}
             <div style={{ marginBottom: 20 }}>
@@ -235,6 +247,53 @@ function ChoiceCard({
       <span style={{ fontSize: 40 }}>{icon}</span>
       <span style={{ fontWeight: 700, fontSize: 15, fontFamily: t.head }}>{title}</span>
       <span style={{ fontSize: 11, color: t.muted, fontWeight: 600 }}>{sub}</span>
+    </button>
+  );
+}
+
+function Checkbox({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={checked}
+      onClick={() => onChange(!checked)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        border: "none",
+        background: "transparent",
+        cursor: "pointer",
+        padding: "8px 4px",
+        font: "inherit",
+        color: t.text,
+      }}
+    >
+      <span
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 7,
+          border: `2px solid ${checked ? t.accentDeep : t.border}`,
+          background: checked ? t.accentDeep : "transparent",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          transition: "background .15s ease, border-color .15s ease",
+        }}
+      >
+        {checked && <span style={{ color: "#fff", fontSize: 13, fontWeight: 900, lineHeight: 1 }}>✓</span>}
+      </span>
+      <span style={{ fontWeight: 700, fontSize: 14 }}>{label}</span>
     </button>
   );
 }

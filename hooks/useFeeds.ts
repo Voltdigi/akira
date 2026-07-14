@@ -20,7 +20,7 @@ export function useFeeds() {
 
     supabase
       .from(TABLE)
-      .select("id, time, type, ml")
+      .select("id, time, type, ml, is_formula")
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) console.error("Failed to load feeds:", error.message);
@@ -52,12 +52,13 @@ export function useFeeds() {
     };
   }, []);
 
-  const addFeed = useCallback((type: FeedType, ml: number | null) => {
+  const addFeed = useCallback((type: FeedType, ml: number | null, isFormula: boolean | null) => {
     const feed: Feed = {
       id: crypto.randomUUID(),
       time: Date.now(),
       type,
       ml: type === "bottle" ? ml ?? 0 : null,
+      is_formula: type === "bottle" ? isFormula ?? false : null,
     };
     setFeeds((prev) => [...prev, feed]);
     supabase
