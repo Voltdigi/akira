@@ -7,6 +7,8 @@ import LogSheet, { SheetFlow } from "@/components/LogSheet";
 import { useFeeds } from "@/hooks/useFeeds";
 import { useClockFormat } from "@/hooks/useClockFormat";
 import { useUnit } from "@/hooks/useUnit";
+import { useVolume } from "@/hooks/useVolume";
+import { useSoundChoice } from "@/hooks/useSoundChoice";
 import { theme as t } from "@/lib/theme";
 import type { Feed } from "@/lib/types";
 import { formatAmount, stepMl } from "@/lib/units";
@@ -26,6 +28,8 @@ export default function FeedTracker() {
   const { feeds, loaded, addFeed, deleteFeed, updateFeed } = useFeeds();
   const { hour12 } = useClockFormat();
   const { unit } = useUnit();
+  const { volume } = useVolume();
+  const { sound } = useSoundChoice();
   const step = stepMl(unit);
 
   // live "now" so the hero clock ticks
@@ -126,6 +130,11 @@ export default function FeedTracker() {
           <Link
             href="/settings"
             aria-label="Settings"
+            onClick={() => {
+              const audio = new Audio(sound.src);
+              audio.volume = volume;
+              audio.play().catch(() => {});
+            }}
             style={{
               width: 46,
               height: 46,

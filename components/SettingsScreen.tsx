@@ -4,11 +4,22 @@ import Link from "next/link";
 import Screen from "@/components/Screen";
 import { useClockFormat } from "@/hooks/useClockFormat";
 import { useUnit } from "@/hooks/useUnit";
+import { useVolume } from "@/hooks/useVolume";
+import { useSoundChoice } from "@/hooks/useSoundChoice";
+import { SOUND_OPTIONS } from "@/lib/sounds";
 import { theme as t } from "@/lib/theme";
 
 export default function SettingsScreen() {
   const { hour12, setHour12, loaded: clockLoaded } = useClockFormat();
   const { unit, setUnit, loaded: unitLoaded } = useUnit();
+  const { volume, setVolume, loaded: volumeLoaded } = useVolume();
+  const { soundId, setSoundId, loaded: soundLoaded } = useSoundChoice();
+
+  const previewSound = (src: string) => {
+    const audio = new Audio(src);
+    audio.volume = volume;
+    audio.play().catch(() => {});
+  };
 
   return (
     <Screen>
@@ -96,6 +107,78 @@ export default function SettingsScreen() {
             onChange={(v) => setUnit(v ? "oz" : "ml")}
             disabled={!unitLoaded}
           />
+        </div>
+
+        {/* sound */}
+        <div style={{ fontSize: 12, fontWeight: 700, color: t.muted, letterSpacing: 0.4, margin: "22px 2px 8px" }}>
+          SOUND
+        </div>
+        <div
+          style={{
+            background: t.surface,
+            border: `1px solid ${t.border}`,
+            borderRadius: 20,
+            padding: "16px 18px",
+            opacity: volumeLoaded ? 1 : 0.5,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>Volume</div>
+            <div style={{ fontSize: 13, color: t.accentDeep, fontWeight: 700 }}>{Math.round(volume * 100)}%</div>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={Math.round(volume * 100)}
+            onChange={(e) => setVolume(Number(e.target.value) / 100)}
+            disabled={!volumeLoaded}
+            style={{ width: "100%", accentColor: t.accentDeep, height: 6 }}
+          />
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 14,
+            background: t.surface,
+            border: `1px solid ${t.border}`,
+            borderRadius: 20,
+            padding: "16px 18px",
+            marginTop: 12,
+            opacity: soundLoaded ? 1 : 0.5,
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: 15 }}>Sound</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {SOUND_OPTIONS.map((opt) => {
+              const active = soundId === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => {
+                    setSoundId(opt.id);
+                    previewSound(opt.src);
+                  }}
+                  disabled={!soundLoaded}
+                  style={{
+                    padding: "9px 15px",
+                    borderRadius: 999,
+                    border: `2px solid ${t.border}`,
+                    background: active ? t.accent : t.surface2,
+                    color: active ? t.accentText : t.text,
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: soundLoaded ? "pointer" : "default",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </Screen>
