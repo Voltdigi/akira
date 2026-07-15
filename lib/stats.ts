@@ -99,3 +99,40 @@ export function dateLabelFor(ms: number): string {
     day: "numeric",
   });
 }
+
+/** "Today", "Yesterday", or a full date label — for grouping feeds by day. */
+export function dayLabelFor(ms: number): string {
+  const day = new Date(ms);
+  day.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((today.getTime() - day.getTime()) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return dateLabelFor(ms);
+}
+
+export interface FeedDayGroup {
+  key: number;
+  label: string;
+  feeds: Feed[];
+}
+
+/** Groups feeds by calendar day, newest day first, feeds within a day newest first. */
+export function groupFeedsByDay(feeds: Feed[]): FeedDayGroup[] {
+  const sorted = [...feeds].sort((a, b) => b.time - a.time);
+  const map = new Map<number, Feed[]>();
+  for (const f of sorted) {
+    const d = new Date(f.time);
+    d.setHours(0, 0, 0, 0);
+    const key = d.getTime();
+    const group = map.get(key);
+    if (group) group.push(f);
+    else map.set(key, [f]);
+  }
+  return Array.from(map.entries()).map(([key, dayFeeds]) => ({
+    key,
+    label: dayLabelFor(key),
+    feeds: dayFeeds,
+  }));
+}

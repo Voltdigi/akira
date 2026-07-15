@@ -236,7 +236,12 @@ export default function FeedTracker() {
 
         {/* recent */}
         <div style={{ marginTop: 20 }}>
-          <div style={{ fontWeight: 700, fontFamily: t.head, fontSize: 15, margin: "0 2px 11px" }}>Recent feeds</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "0 2px 11px" }}>
+            <div style={{ fontWeight: 700, fontFamily: t.head, fontSize: 15 }}>Recent feeds</div>
+            <Link href="/feeds" style={{ fontSize: 13, fontWeight: 700, color: t.accentDeep, textDecoration: "none" }}>
+              View all
+            </Link>
+          </div>
           {rows.length > 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {rows.map((f) => (
