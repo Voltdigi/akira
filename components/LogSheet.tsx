@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { theme as t } from "@/lib/theme";
-import { formatAmount, presetsFor, type Unit } from "@/lib/units";
+import { formatAmount, ozToMl, stepOptionsFor, type StepOption, type Unit } from "@/lib/units";
 
 export type SheetFlow = "choose" | "bottle" | "breast" | "edit";
 
@@ -12,14 +12,11 @@ interface Props {
   // bottle draft
   mlDraft: number;
   setMl: (n: number) => void;
-  incMl: () => void;
-  decMl: () => void;
   isFormula: boolean;
   setIsFormula: (v: boolean) => void;
   // edit draft
   editMl: number;
-  editIncMl: () => void;
-  editDecMl: () => void;
+  setEditMl: (n: number) => void;
   editIsFormula: boolean;
   setEditIsFormula: (v: boolean) => void;
   editTime: string;
@@ -48,6 +45,11 @@ const roundBtn: React.CSSProperties = {
 };
 
 export default function LogSheet(p: Props) {
+  const [stepIdx, setStepIdx] = useState(1);
+  const stepOpts = stepOptionsFor(p.unit);
+  const step = stepOpts[Math.min(stepIdx, stepOpts.length - 1)].ml;
+  const clampMl = (n: number) => Math.min(AMOUNT_MAX_ML, Math.max(AMOUNT_MIN_ML, n));
+
   return (
     <div
       onClick={p.onClose}
@@ -96,37 +98,15 @@ export default function LogSheet(p: Props) {
               Bottle feed 🍼
             </div>
             <div style={{ textAlign: "center", margin: "18px 0 4px" }}>
-              <span style={{ fontFamily: t.head, fontSize: 60, fontWeight: 700, lineHeight: 1 }}>
-                {formatAmount(p.mlDraft, p.unit)}
-              </span>
+              <AmountInput ml={p.mlDraft} unit={p.unit} onChange={p.setMl} fontSize={60} />
               <span style={{ fontSize: 22, fontWeight: 700, color: t.muted, marginLeft: 6 }}>{p.unit}</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 26, margin: "16px 0 20px" }}>
-              <button onClick={p.decMl} style={{ ...roundBtn, width: 56, height: 56, fontSize: 30 }}>−</button>
-              <button onClick={p.incMl} style={{ ...roundBtn, width: 56, height: 56, fontSize: 30 }}>+</button>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 26, margin: "16px 0 14px" }}>
+              <button onClick={() => p.setMl(clampMl(p.mlDraft - step))} style={{ ...roundBtn, width: 56, height: 56, fontSize: 30 }}>−</button>
+              <button onClick={() => p.setMl(clampMl(p.mlDraft + step))} style={{ ...roundBtn, width: 56, height: 56, fontSize: 30 }}>+</button>
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 22 }}>
-              {presetsFor(p.unit).map((preset) => {
-                const active = p.mlDraft === preset.ml;
-                return (
-                  <button
-                    key={preset.label}
-                    onClick={() => p.setMl(preset.ml)}
-                    style={{
-                      padding: "9px 15px",
-                      borderRadius: 999,
-                      border: `2px solid ${t.border}`,
-                      background: active ? t.accent : t.surface2,
-                      color: active ? t.accentText : t.text,
-                      fontWeight: 700,
-                      fontSize: 13,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
+            <div style={{ marginBottom: 22 }}>
+              <StepPicker options={stepOpts} value={stepIdx} onChange={setStepIdx} />
             </div>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
               <Checkbox checked={p.isFormula} onChange={p.setIsFormula} label="Formula" />
@@ -142,16 +122,19 @@ export default function LogSheet(p: Props) {
               <div style={{ fontWeight: 700, fontFamily: t.head, fontSize: 19, marginTop: 2 }}>{p.editTitle}</div>
             </div>
             {p.editIsBottle && (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 22, marginBottom: 18 }}>
-                <button onClick={p.editDecMl} style={{ ...roundBtn, width: 50, height: 50, fontSize: 26 }}>−</button>
-                <div style={{ minWidth: 96, textAlign: "center" }}>
-                  <span style={{ fontFamily: t.head, fontSize: 34, fontWeight: 700 }}>
-                    {formatAmount(p.editMl, p.unit)}
-                  </span>
-                  <span style={{ fontSize: 15, color: t.muted, fontWeight: 700, marginLeft: 4 }}>{p.unit}</span>
+              <>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 22, marginBottom: 14 }}>
+                  <button onClick={() => p.setEditMl(clampMl(p.editMl - step))} style={{ ...roundBtn, width: 50, height: 50, fontSize: 26 }}>−</button>
+                  <div style={{ minWidth: 96, textAlign: "center" }}>
+                    <AmountInput ml={p.editMl} unit={p.unit} onChange={p.setEditMl} fontSize={34} />
+                    <span style={{ fontSize: 15, color: t.muted, fontWeight: 700, marginLeft: 4 }}>{p.unit}</span>
+                  </div>
+                  <button onClick={() => p.setEditMl(clampMl(p.editMl + step))} style={{ ...roundBtn, width: 50, height: 50, fontSize: 26 }}>+</button>
                 </div>
-                <button onClick={p.editIncMl} style={{ ...roundBtn, width: 50, height: 50, fontSize: 26 }}>+</button>
-              </div>
+                <div style={{ marginBottom: 18 }}>
+                  <StepPicker options={stepOpts} value={stepIdx} onChange={setStepIdx} />
+                </div>
+              </>
             )}
             {p.editIsBottle && (
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
@@ -216,6 +199,107 @@ export default function LogSheet(p: Props) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+const AMOUNT_MIN_ML = 0;
+const AMOUNT_MAX_ML = 400;
+
+/** Editable amount display — tap to type an exact value, in the active unit. */
+function AmountInput({
+  ml,
+  unit,
+  onChange,
+  fontSize,
+}: {
+  ml: number;
+  unit: Unit;
+  onChange: (ml: number) => void;
+  fontSize: number;
+}) {
+  const [text, setText] = useState(formatAmount(ml, unit));
+
+  useEffect(() => {
+    setText(formatAmount(ml, unit));
+  }, [ml, unit]);
+
+  const commit = (raw: string) => {
+    const n = parseFloat(raw);
+    if (!Number.isFinite(n)) {
+      setText(formatAmount(ml, unit));
+      return;
+    }
+    const newMl = unit === "oz" ? ozToMl(n) : n;
+    onChange(Math.min(AMOUNT_MAX_ML, Math.max(AMOUNT_MIN_ML, Math.round(newMl))));
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={text}
+      onChange={(e) => {
+        const v = e.target.value;
+        if (/^\d*\.?\d*$/.test(v)) setText(v);
+      }}
+      onBlur={(e) => commit(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          commit(e.currentTarget.value);
+          e.currentTarget.blur();
+        }
+      }}
+      style={{
+        fontFamily: t.head,
+        fontSize,
+        fontWeight: 700,
+        lineHeight: 1,
+        textAlign: "center",
+        border: "none",
+        background: "transparent",
+        color: t.text,
+        width: `${Math.max(2, text.length) + 1}ch`,
+        outline: "none",
+        padding: 0,
+      }}
+    />
+  );
+}
+
+/** Row of chips picking which +/- step size the round buttons apply. */
+function StepPicker({
+  options,
+  value,
+  onChange,
+}: {
+  options: StepOption[];
+  value: number;
+  onChange: (idx: number) => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+      {options.map((opt, i) => {
+        const active = i === value;
+        return (
+          <button
+            key={opt.label}
+            onClick={() => onChange(i)}
+            style={{
+              padding: "7px 13px",
+              borderRadius: 999,
+              border: `2px solid ${t.border}`,
+              background: active ? t.accent : t.surface2,
+              color: active ? t.accentText : t.text,
+              fontWeight: 700,
+              fontSize: 12,
+              cursor: "pointer",
+            }}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

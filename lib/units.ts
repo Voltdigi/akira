@@ -16,20 +16,26 @@ export function formatAmount(ml: number, unit: Unit): string {
   return unit === "oz" ? mlToOz(ml).toFixed(1) : String(Math.round(ml));
 }
 
-/** +/- stepper size, in ml, that feels natural for the given unit. */
-export function stepMl(unit: Unit): number {
-  return unit === "oz" ? Math.round(ozToMl(0.5)) : 10;
-}
-
-export interface AmountPreset {
+export interface StepOption {
   label: string;
   ml: number;
 }
 
-/** Quick-pick amounts, in ml, labeled in the given unit. */
-export function presetsFor(unit: Unit): AmountPreset[] {
+/** Selectable +/- stepper sizes, labeled in the given unit's own natural increments. */
+export function stepOptionsFor(unit: Unit): StepOption[] {
   if (unit === "oz") {
-    return [2, 3, 4, 5, 6].map((oz) => ({ label: `${oz} oz`, ml: Math.round(ozToMl(oz)) }));
+    return [
+      { label: "¼ oz", ml: Math.round(ozToMl(0.25)) },
+      { label: "½ oz", ml: Math.round(ozToMl(0.5)) },
+      { label: "1 oz", ml: Math.round(ozToMl(1)) },
+      { label: "2 oz", ml: Math.round(ozToMl(2)) },
+    ];
   }
-  return [60, 90, 120, 150, 180].map((ml) => ({ label: `${ml} ml`, ml }));
+  return [
+    { label: "1 ml", ml: 1 },
+    { label: "5 ml", ml: 5 },
+    { label: "20 ml", ml: 20 },
+    { label: "50 ml", ml: 50 },
+    { label: "100 ml", ml: 100 },
+  ];
 }

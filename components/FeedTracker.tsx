@@ -11,7 +11,7 @@ import { useVolume } from "@/hooks/useVolume";
 import { useSoundChoice } from "@/hooks/useSoundChoice";
 import { theme as t } from "@/lib/theme";
 import type { Feed } from "@/lib/types";
-import { formatAmount, stepMl } from "@/lib/units";
+import { formatAmount } from "@/lib/units";
 import {
   applyHhmm,
   dateLabelFor,
@@ -30,7 +30,6 @@ export default function FeedTracker() {
   const { unit } = useUnit();
   const { volume } = useVolume();
   const { sound } = useSoundChoice();
-  const step = stepMl(unit);
 
   // live "now" so the hero clock ticks
   const [now, setNow] = useState(() => Date.now());
@@ -41,7 +40,7 @@ export default function FeedTracker() {
 
   // flow / drafts
   const [flow, setFlow] = useState<SheetFlow | null>(null);
-  const [mlDraft, setMlDraft] = useState(120);
+  const [mlDraft, setMlDraft] = useState(0);
   const [isFormulaDraft, setIsFormulaDraft] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editMl, setEditMl] = useState(120);
@@ -332,13 +331,10 @@ export default function FeedTracker() {
           unit={unit}
           mlDraft={mlDraft}
           setMl={setMlDraft}
-          incMl={() => setMlDraft((n) => Math.min(400, n + step))}
-          decMl={() => setMlDraft((n) => Math.max(10, n - step))}
           isFormula={isFormulaDraft}
           setIsFormula={setIsFormulaDraft}
           editMl={editMl}
-          editIncMl={() => setEditMl((n) => Math.min(400, n + step))}
-          editDecMl={() => setEditMl((n) => Math.max(10, n - step))}
+          setEditMl={setEditMl}
           editIsFormula={editIsFormula}
           setEditIsFormula={setEditIsFormula}
           editTime={editTime}
@@ -347,7 +343,7 @@ export default function FeedTracker() {
           editIcon={editType === "bottle" ? "🍼" : "🤱"}
           editTitle={editType === "bottle" ? "Bottle feed" : "Breast feed"}
           onChooseBottle={() => {
-            setMlDraft(120);
+            setMlDraft(0);
             setIsFormulaDraft(false);
             setFlow("bottle");
           }}
