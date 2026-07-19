@@ -84,6 +84,7 @@ export default function FeedTracker() {
     showToast(`Breast feed logged 💗 ${fmtDuration(durationSec)}`);
   };
   const logBottle = () => {
+    if (mlDraft <= 0) return;
     addFeed("bottle", { ml: mlDraft, isFormula: isFormulaDraft });
     close();
     showToast("Bottle feed logged 🍼");

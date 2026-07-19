@@ -117,7 +117,9 @@ export default function LogSheet(p: Props) {
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
               <Checkbox checked={p.isFormula} onChange={p.setIsFormula} label="Formula" />
             </div>
-            <PrimaryButton onClick={p.onLogBottle}>Log bottle feed</PrimaryButton>
+            <PrimaryButton onClick={p.onLogBottle} disabled={p.mlDraft <= 0}>
+              Log bottle feed
+            </PrimaryButton>
           </>
         )}
 
@@ -512,14 +514,23 @@ function Checkbox({
   );
 }
 
-function PrimaryButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+function PrimaryButton({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       style={{
         width: "100%",
         border: "none",
-        cursor: "pointer",
+        cursor: disabled ? "default" : "pointer",
         background: t.btn,
         color: t.accentText,
         fontFamily: t.head,
@@ -527,6 +538,7 @@ function PrimaryButton({ children, onClick }: { children: React.ReactNode; onCli
         fontSize: 17,
         padding: 16,
         borderRadius: 20,
+        opacity: disabled ? 0.5 : 1,
       }}
     >
       {children}
