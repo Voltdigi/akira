@@ -49,10 +49,14 @@ export default function LogSheet(p: Props) {
   const stepOpts = stepOptionsFor(p.unit);
   const step = stepOpts[Math.min(stepIdx, stepOpts.length - 1)].ml;
   const clampMl = (n: number) => Math.min(AMOUNT_MAX_ML, Math.max(AMOUNT_MIN_ML, n));
+  const [breastTimerLocked, setBreastTimerLocked] = useState(false);
+  const locked = p.flow === "breast" && breastTimerLocked;
 
   return (
     <div
-      onClick={p.onClose}
+      onClick={() => {
+        if (!locked) p.onClose();
+      }}
       style={{
         position: "absolute",
         inset: 0,
@@ -90,7 +94,9 @@ export default function LogSheet(p: Props) {
           </>
         )}
 
-        {p.flow === "breast" && <BreastTimer onStop={p.onStopBreast} />}
+        {p.flow === "breast" && (
+          <BreastTimer onStop={p.onStopBreast} onLockChange={setBreastTimerLocked} />
+        )}
 
         {p.flow === "bottle" && (
           <>
@@ -358,7 +364,13 @@ function fmtStopwatch(ms: number): string {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-function BreastTimer({ onStop }: { onStop: (durationSec: number) => void }) {
+function BreastTimer({
+  onStop,
+  onLockChange,
+}: {
+  onStop: (durationSec: number) => void;
+  onLockChange: (locked: boolean) => void;
+}) {
   const [status, setStatus] = useState<TimerStatus>("idle");
   const [accumulatedMs, setAccumulatedMs] = useState(0);
   const [runStart, setRunStart] = useState<number | null>(null);
@@ -374,6 +386,13 @@ function BreastTimer({ onStop }: { onStop: (durationSec: number) => void }) {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [status, accumulatedMs, runStart]);
+
+  useEffect(() => {
+    // Lock the sheet against accidental backdrop dismissal once timing has started
+    // (running or paused), so a stray tap can't discard the in-progress feed.
+    onLockChange(status !== "idle");
+    return () => onLockChange(false);
+  }, [status, onLockChange]);
 
   const start = () => {
     setRunStart(Date.now());
