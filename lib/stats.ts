@@ -112,6 +112,213 @@ export function dayLabelFor(ms: number): string {
   return dateLabelFor(ms);
 }
 
+export type Granularity = "day" | "week" | "month" | "quarter" | "year";
+
+/** Number of bars/cards shown per Insights window, per granularity. */
+export const BUCKET_COUNT: Record<Granularity, number> = {
+  day: 7,
+  week: 8,
+  month: 6,
+  quarter: 4,
+  year: 5,
+};
+
+const WEEKDAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** Start-of-bucket for a timestamp, in local time. */
+function bucketStartFor(ms: number, g: Granularity): Date {
+  const d = new Date(ms);
+  d.setHours(0, 0, 0, 0);
+  if (g === "week") {
+    d.setDate(d.getDate() - d.getDay());
+  } else if (g === "month") {
+    d.setDate(1);
+  } else if (g === "quarter") {
+    d.setMonth(Math.floor(d.getMonth() / 3) * 3, 1);
+  } else if (g === "year") {
+    d.setMonth(0, 1);
+  }
+  return d;
+}
+
+/** Advances a (bucket-aligned) date by `n` whole buckets, using local calendar math. */
+function addBuckets(d: Date, g: Granularity, n: number): Date {
+  const c = new Date(d);
+  if (g === "day") c.setDate(c.getDate() + n);
+  else if (g === "week") c.setDate(c.getDate() + n * 7);
+  else if (g === "month") c.setMonth(c.getMonth() + n);
+  else if (g === "quarter") c.setMonth(c.getMonth() + n * 3);
+  else c.setFullYear(c.getFullYear() + n);
+  return c;
+}
+
+/**
+ * Calendar-day count between two local-midnight timestamps, via UTC-normalized
+ * differencing rather than raw ms subtraction — a DST transition inside the
+ * range would otherwise make the real elapsed time 23h/25h off from a whole
+ * number of days and skew per-day averages.
+ */
+function daysBetween(aMs: number, bMs: number): number {
+  const a = new Date(aMs);
+  const b = new Date(bMs);
+  const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+  const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.max(1, Math.round((utcB - utcA) / 86400000));
+}
+
+function bucketBarLabel(start: Date, g: Granularity): string {
+  const curYear = new Date().getFullYear();
+  const yearSuffix = start.getFullYear() !== curYear ? `'${String(start.getFullYear()).slice(2)}` : "";
+  switch (g) {
+    case "day":
+      return WEEKDAY_LETTERS[start.getDay()];
+    case "week":
+      return `${start.getMonth() + 1}/${start.getDate()}`;
+    case "month":
+      return `${MONTH_SHORT[start.getMonth()]}${yearSuffix}`;
+    case "quarter":
+      return `Q${Math.floor(start.getMonth() / 3) + 1}${yearSuffix}`;
+    case "year":
+      return String(start.getFullYear());
+  }
+}
+
+function bucketFullLabel(start: Date, end: Date, g: Granularity): string {
+  switch (g) {
+    case "day":
+      return dayLabelFor(start.getTime());
+    case "week": {
+      const endIncl = new Date(end.getTime() - 86400000);
+      return `${MONTH_SHORT[start.getMonth()]} ${start.getDate()} – ${MONTH_SHORT[endIncl.getMonth()]} ${endIncl.getDate()}, ${endIncl.getFullYear()}`;
+    }
+    case "month":
+      return `${MONTH_SHORT[start.getMonth()]} ${start.getFullYear()}`;
+    case "quarter": {
+      const endIncl = new Date(end.getTime() - 86400000);
+      return `Q${Math.floor(start.getMonth() / 3) + 1} ${start.getFullYear()} (${MONTH_SHORT[start.getMonth()]}–${MONTH_SHORT[endIncl.getMonth()]})`;
+    }
+    case "year":
+      return String(start.getFullYear());
+  }
+}
+
+function windowRangeLabel(firstStart: Date, lastEnd: Date, g: Granularity): string {
+  const endIncl = new Date(lastEnd.getTime() - 86400000);
+  if (g === "day" || g === "week") {
+    return `${MONTH_SHORT[firstStart.getMonth()]} ${firstStart.getDate()} – ${MONTH_SHORT[endIncl.getMonth()]} ${endIncl.getDate()}, ${endIncl.getFullYear()}`;
+  }
+  if (g === "month" || g === "quarter") {
+    return firstStart.getFullYear() === endIncl.getFullYear()
+      ? `${MONTH_SHORT[firstStart.getMonth()]} – ${MONTH_SHORT[endIncl.getMonth()]} ${endIncl.getFullYear()}`
+      : `${MONTH_SHORT[firstStart.getMonth()]} ${firstStart.getFullYear()} – ${MONTH_SHORT[endIncl.getMonth()]} ${endIncl.getFullYear()}`;
+  }
+  return `${firstStart.getFullYear()} – ${endIncl.getFullYear()}`;
+}
+
+export interface BucketStats {
+  start: number;
+  end: number;
+  feedCount: number;
+  bottleMl: number;
+  formulaMl: number;
+  breastMilkMl: number;
+  breastCount: number;
+  breastDurationSec: number;
+  avgFeedsPerDay: number;
+  avgMlPerDay: number;
+  avgIntervalSec: number | null;
+  isCurrent: boolean;
+  barLabel: string;
+  fullLabel: string;
+}
+
+export interface InsightsWindow {
+  buckets: BucketStats[];
+  rangeLabel: string;
+  canGoNext: boolean;
+}
+
+function statsForBucket(start: Date, end: Date, feeds: Feed[], g: Granularity): BucketStats {
+  const startMs = start.getTime();
+  const endMs = end.getTime();
+  const inBucket = feeds.filter((f) => f.time >= startMs && f.time < endMs);
+
+  let bottleMl = 0;
+  let formulaMl = 0;
+  let breastMilkMl = 0;
+  let breastCount = 0;
+  let breastDurationSec = 0;
+  for (const f of inBucket) {
+    if (f.type === "bottle") {
+      const ml = f.ml ?? 0;
+      bottleMl += ml;
+      if (f.is_formula) formulaMl += ml;
+      else breastMilkMl += ml;
+    } else {
+      breastCount++;
+      breastDurationSec += f.duration_sec ?? 0;
+    }
+  }
+
+  let avgIntervalSec: number | null = null;
+  if (inBucket.length >= 2) {
+    const sorted = [...inBucket].sort((a, b) => a.time - b.time);
+    let totalGap = 0;
+    for (let i = 1; i < sorted.length; i++) totalGap += sorted[i].time - sorted[i - 1].time;
+    avgIntervalSec = totalGap / (sorted.length - 1) / 1000;
+  }
+
+  const days = daysBetween(startMs, endMs);
+  const now = Date.now();
+
+  return {
+    start: startMs,
+    end: endMs,
+    feedCount: inBucket.length,
+    bottleMl,
+    formulaMl,
+    breastMilkMl,
+    breastCount,
+    breastDurationSec,
+    avgFeedsPerDay: inBucket.length / days,
+    avgMlPerDay: bottleMl / days,
+    avgIntervalSec,
+    isCurrent: now >= startMs && now < endMs,
+    barLabel: bucketBarLabel(start, g),
+    fullLabel: bucketFullLabel(start, end, g),
+  };
+}
+
+/** Builds an ordered (oldest→newest) window of `BUCKET_COUNT[g]` buckets ending at `anchorMs`'s bucket. */
+export function buildInsightsWindow(feeds: Feed[], granularity: Granularity, anchorMs: number): InsightsWindow {
+  const n = BUCKET_COUNT[granularity];
+  const lastStart = bucketStartFor(anchorMs, granularity);
+  const buckets: BucketStats[] = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const start = addBuckets(lastStart, granularity, -i);
+    const end = addBuckets(start, granularity, 1);
+    buckets.push(statsForBucket(start, end, feeds, granularity));
+  }
+  const first = buckets[0];
+  const last = buckets[buckets.length - 1];
+  const nowBucketStart = bucketStartFor(Date.now(), granularity).getTime();
+  return {
+    buckets,
+    rangeLabel: windowRangeLabel(new Date(first.start), new Date(last.end), granularity),
+    canGoNext: lastStart.getTime() < nowBucketStart,
+  };
+}
+
+/** Pages the window a full page forward/backward through history, clamped at the present. */
+export function shiftAnchor(anchorMs: number, granularity: Granularity, dir: 1 | -1): number {
+  const n = BUCKET_COUNT[granularity];
+  const base = bucketStartFor(anchorMs, granularity);
+  const shifted = addBuckets(base, granularity, dir * n);
+  const nowBucketStart = bucketStartFor(Date.now(), granularity);
+  return Math.min(shifted.getTime(), nowBucketStart.getTime());
+}
+
 export interface FeedDayGroup {
   key: number;
   label: string;

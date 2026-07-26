@@ -218,7 +218,12 @@ export default function FeedTracker() {
         <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 22, padding: "16px 18px", marginTop: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <span style={{ fontWeight: 700, fontFamily: t.head, fontSize: 15 }}>Last 7 days</span>
-            <span style={{ fontSize: 12, color: t.muted, fontWeight: 600 }}>{weekTotal} feeds</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 12, color: t.muted, fontWeight: 600 }}>{weekTotal} feeds</span>
+              <Link href="/insights" style={{ fontSize: 13, fontWeight: 700, color: t.accentDeep, textDecoration: "none" }}>
+                View insights
+              </Link>
+            </div>
           </div>
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 7, height: 92 }}>
             {trend.map((d, i) => (
