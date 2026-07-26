@@ -46,6 +46,7 @@ export default function FeedTracker() {
   const [editMl, setEditMl] = useState(120);
   const [editIsFormula, setEditIsFormula] = useState(false);
   const [editTime, setEditTime] = useState("12:00");
+  const [editDurationSec, setEditDurationSec] = useState(0);
   const [editType, setEditType] = useState<Feed["type"]>("bottle");
 
   // toast
@@ -75,6 +76,7 @@ export default function FeedTracker() {
     setEditIsFormula(f.is_formula ?? false);
     setEditType(f.type);
     setEditTime(toHhmm(f.time));
+    setEditDurationSec(f.duration_sec ?? 0);
     setFlow("edit");
   };
 
@@ -96,6 +98,8 @@ export default function FeedTracker() {
     if (editType === "bottle") {
       patch.ml = editMl;
       patch.is_formula = editIsFormula;
+    } else {
+      patch.duration_sec = editDurationSec;
     }
     updateFeed(editId, patch);
     close();
@@ -340,6 +344,8 @@ export default function FeedTracker() {
           setEditIsFormula={setEditIsFormula}
           editTime={editTime}
           setEditTime={setEditTime}
+          editDurationSec={editDurationSec}
+          setEditDurationSec={setEditDurationSec}
           editIsBottle={editType === "bottle"}
           editIcon={editType === "bottle" ? "🍼" : "🤱"}
           editTitle={editType === "bottle" ? "Bottle feed" : "Breast feed"}

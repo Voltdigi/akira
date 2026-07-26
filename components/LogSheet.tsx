@@ -21,6 +21,8 @@ interface Props {
   setEditIsFormula: (v: boolean) => void;
   editTime: string;
   setEditTime: (v: string) => void;
+  editDurationSec: number;
+  setEditDurationSec: (n: number) => void;
   editIsBottle: boolean;
   editIcon: string;
   editTitle: string;
@@ -168,6 +170,14 @@ export default function LogSheet(p: Props) {
                 }}
               />
             </div>
+            {!p.editIsBottle && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: t.muted, marginBottom: 8, letterSpacing: 0.4 }}>
+                  DURATION (MM:SS)
+                </div>
+                <DurationInput sec={p.editDurationSec} onChange={p.setEditDurationSec} />
+              </div>
+            )}
             <div style={{ display: "flex", gap: 12 }}>
               <button
                 onClick={p.onDelete}
@@ -270,6 +280,80 @@ function AmountInput({
         width: `${Math.max(2, text.length) + 1}ch`,
         outline: "none",
         padding: 0,
+      }}
+    />
+  );
+}
+
+/** "M:SS" for a duration in seconds. */
+function fmtMmss(totalSec: number): string {
+  const s = Math.max(0, Math.round(totalSec));
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${String(sec).padStart(2, "0")}`;
+}
+
+/** Parses "M:SS", "MM:SS", or a bare seconds count; null if invalid. */
+function parseMmss(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const parts = trimmed.split(":");
+  if (parts.length === 1) {
+    const n = parseInt(parts[0], 10);
+    return Number.isFinite(n) ? Math.max(0, n) : null;
+  }
+  if (parts.length === 2) {
+    const m = parseInt(parts[0], 10);
+    const s = parseInt(parts[1], 10);
+    if (!Number.isFinite(m) || !Number.isFinite(s)) return null;
+    return Math.max(0, m * 60 + s);
+  }
+  return null;
+}
+
+/** Editable "M:SS" duration display for the breast feed edit form. */
+function DurationInput({ sec, onChange }: { sec: number; onChange: (sec: number) => void }) {
+  const [text, setText] = useState(fmtMmss(sec));
+
+  useEffect(() => {
+    setText(fmtMmss(sec));
+  }, [sec]);
+
+  const commit = (raw: string) => {
+    const parsed = parseMmss(raw);
+    if (parsed === null) {
+      setText(fmtMmss(sec));
+      return;
+    }
+    onChange(parsed);
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={text}
+      onChange={(e) => {
+        const v = e.target.value;
+        if (/^\d*:?\d*$/.test(v)) setText(v);
+      }}
+      onBlur={(e) => commit(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          commit(e.currentTarget.value);
+          e.currentTarget.blur();
+        }
+      }}
+      style={{
+        width: "100%",
+        padding: "13px 15px",
+        borderRadius: 15,
+        border: `2px solid ${t.border}`,
+        background: t.surface2,
+        color: t.text,
+        fontSize: 17,
+        fontWeight: 600,
+        fontFamily: t.font,
       }}
     />
   );
