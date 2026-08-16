@@ -70,6 +70,12 @@ export default function FeedTracker() {
 
   const close = () => setFlow(null);
 
+  const openLog = () => {
+    setMlDraft(0);
+    setIsFormulaDraft(false);
+    setFlow("log");
+  };
+
   const openEdit = (f: Feed) => {
     setEditId(f.id);
     setEditMl(f.ml ?? 120);
@@ -311,7 +317,7 @@ export default function FeedTracker() {
         }}
       >
         <button
-          onClick={() => setFlow("choose")}
+          onClick={openLog}
           style={{
             width: "100%",
             border: "none",
@@ -338,6 +344,7 @@ export default function FeedTracker() {
       {flow && (
         <LogSheet
           flow={flow}
+          initialLogType={sorted[0]?.type ?? "bottle"}
           unit={unit}
           mlDraft={mlDraft}
           setMl={setMlDraft}
@@ -354,12 +361,6 @@ export default function FeedTracker() {
           editIsBottle={editType === "bottle"}
           editIcon={editType === "bottle" ? "🍼" : "🤱"}
           editTitle={editType === "bottle" ? "Bottle feed" : "Breastfeed"}
-          onChooseBottle={() => {
-            setMlDraft(0);
-            setIsFormulaDraft(false);
-            setFlow("bottle");
-          }}
-          onChooseBreast={() => setFlow("breast")}
           onLogBottle={logBottle}
           onStopBreast={stopBreast}
           onSave={saveEdit}

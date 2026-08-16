@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { theme as t } from "@/lib/theme";
 import { formatAmount, ozToMl, stepOptionsFor, type StepOption, type Unit } from "@/lib/units";
+import type { FeedType } from "@/lib/types";
 
-export type SheetFlow = "choose" | "bottle" | "breast" | "edit";
+export type SheetFlow = "log" | "edit";
 
 interface Props {
   flow: SheetFlow;
+  initialLogType: FeedType;
   unit: Unit;
   // bottle draft
   mlDraft: number;
@@ -27,8 +29,6 @@ interface Props {
   editIcon: string;
   editTitle: string;
   // actions
-  onChooseBottle: () => void;
-  onChooseBreast: () => void;
   onLogBottle: () => void;
   onStopBreast: (durationSec: number) => void;
   onSave: () => void;
@@ -52,7 +52,8 @@ export default function LogSheet(p: Props) {
   const step = stepOpts[Math.min(stepIdx, stepOpts.length - 1)].ml;
   const clampMl = (n: number) => Math.min(AMOUNT_MAX_ML, Math.max(AMOUNT_MIN_ML, n));
   const [breastTimerLocked, setBreastTimerLocked] = useState(false);
-  const locked = p.flow === "breast" && breastTimerLocked;
+  const [logType, setLogType] = useState<FeedType>(p.initialLogType);
+  const locked = p.flow === "log" && logType === "breast" && breastTimerLocked;
 
   return (
     <div
@@ -81,48 +82,51 @@ export default function LogSheet(p: Props) {
       >
         <div style={{ width: 44, height: 5, borderRadius: 3, background: t.border, margin: "0 auto 18px" }} />
 
-        {p.flow === "choose" && (
-          <>
-            <div style={{ fontFamily: t.head, fontSize: 21, fontWeight: 700, textAlign: "center" }}>
-              Log feed
-            </div>
-            <div style={{ textAlign: "center", color: t.muted, fontSize: 13, fontWeight: 600, margin: "4px 0 20px" }}>
-              Pick a feed type to log
-            </div>
-            <div style={{ display: "flex", gap: 14 }}>
-              <ChoiceCard icon="🍼" title="Bottle" sub="enter amount" onClick={p.onChooseBottle} />
-              <ChoiceCard icon="🤱" title="Breast" sub="time it" onClick={p.onChooseBreast} />
-            </div>
-          </>
-        )}
+        <div style={{ minHeight: 520, display: "flex", flexDirection: "column" }}>
+          {p.flow === "log" && (
+          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+              <div style={{ fontFamily: t.head, fontSize: 21, fontWeight: 700, textAlign: "center", marginBottom: 16 }}>
+                Log feed
+              </div>
 
-        {p.flow === "breast" && (
-          <BreastTimer onStop={p.onStopBreast} onLockChange={setBreastTimerLocked} />
-        )}
+              <div style={{ marginBottom: 22 }}>
+                <FeedTypeToggle
+                  value={logType}
+                  onChange={setLogType}
+                  disabled={logType === "breast" && breastTimerLocked}
+                />
+              </div>
 
-        {p.flow === "bottle" && (
-          <>
-            <div style={{ fontFamily: t.head, fontSize: 21, fontWeight: 700, textAlign: "center" }}>
-              Bottle feed 🍼
+              {logType === "bottle" ? (
+                <>
+                  <div style={{ textAlign: "center", margin: "0 0 4px" }}>
+                    <AmountInput ml={p.mlDraft} unit={p.unit} onChange={p.setMl} fontSize={60} />
+                    <span style={{ fontSize: 22, fontWeight: 700, color: t.muted, marginLeft: 6 }}>{p.unit}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 26, margin: "16px 0 14px" }}>
+                    <button onClick={() => p.setMl(clampMl(p.mlDraft - step))} style={{ ...roundBtn, width: 56, height: 56, fontSize: 30 }}>−</button>
+                    <button onClick={() => p.setMl(clampMl(p.mlDraft + step))} style={{ ...roundBtn, width: 56, height: 56, fontSize: 30 }}>+</button>
+                  </div>
+                  <div style={{ marginBottom: 22 }}>
+                    <StepPicker options={stepOpts} value={stepIdx} onChange={setStepIdx} />
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <Checkbox checked={p.isFormula} onChange={p.setIsFormula} label="Formula" />
+                  </div>
+                </>
+              ) : (
+                <BreastTimer onStop={p.onStopBreast} onLockChange={setBreastTimerLocked} />
+              )}
             </div>
-            <div style={{ textAlign: "center", margin: "18px 0 4px" }}>
-              <AmountInput ml={p.mlDraft} unit={p.unit} onChange={p.setMl} fontSize={60} />
-              <span style={{ fontSize: 22, fontWeight: 700, color: t.muted, marginLeft: 6 }}>{p.unit}</span>
+            <div style={{ marginTop: "auto" }}>
+              {logType === "bottle" && (
+                <PrimaryButton onClick={p.onLogBottle} disabled={p.mlDraft <= 0}>
+                  Log bottle feed
+                </PrimaryButton>
+              )}
             </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 26, margin: "16px 0 14px" }}>
-              <button onClick={() => p.setMl(clampMl(p.mlDraft - step))} style={{ ...roundBtn, width: 56, height: 56, fontSize: 30 }}>−</button>
-              <button onClick={() => p.setMl(clampMl(p.mlDraft + step))} style={{ ...roundBtn, width: 56, height: 56, fontSize: 30 }}>+</button>
-            </div>
-            <div style={{ marginBottom: 22 }}>
-              <StepPicker options={stepOpts} value={stepIdx} onChange={setStepIdx} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-              <Checkbox checked={p.isFormula} onChange={p.setIsFormula} label="Formula" />
-            </div>
-            <PrimaryButton onClick={p.onLogBottle} disabled={p.mlDraft <= 0}>
-              Log bottle feed
-            </PrimaryButton>
-          </>
+          </div>
         )}
 
         {p.flow === "edit" && (
@@ -216,6 +220,7 @@ export default function LogSheet(p: Props) {
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   );
@@ -396,38 +401,61 @@ function StepPicker({
   );
 }
 
-function ChoiceCard({
-  icon,
-  title,
-  sub,
-  onClick,
+function FeedTypeToggle({
+  value,
+  onChange,
+  disabled,
 }: {
-  icon: string;
-  title: string;
-  sub: string;
-  onClick: () => void;
+  value: FeedType;
+  onChange: (v: FeedType) => void;
+  disabled?: boolean;
 }) {
+  const options: { value: FeedType; label: string; icon: string }[] = [
+    { value: "bottle", label: "Bottle", icon: "🍼" },
+    { value: "breast", label: "Breast", icon: "🤱" },
+  ];
   return (
-    <button
-      onClick={onClick}
+    <div
       style={{
-        flex: 1,
-        border: `2px solid ${t.border}`,
-        background: t.surface2,
-        color: t.text,
-        borderRadius: 22,
-        padding: "22px 12px",
-        cursor: "pointer",
         display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 6,
+        gap: 4,
+        padding: 4,
+        background: t.surface2,
+        borderRadius: 999,
+        opacity: disabled ? 0.55 : 1,
       }}
     >
-      <span style={{ fontSize: 40 }}>{icon}</span>
-      <span style={{ fontWeight: 700, fontSize: 15, fontFamily: t.head }}>{title}</span>
-      <span style={{ fontSize: 11, color: t.muted, fontWeight: 600 }}>{sub}</span>
-    </button>
+      {options.map((opt) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(opt.value)}
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              border: "none",
+              borderRadius: 999,
+              padding: "10px 0",
+              background: active ? t.accent : "transparent",
+              color: active ? t.accentText : t.text,
+              fontWeight: 700,
+              fontSize: 14,
+              fontFamily: t.font,
+              cursor: disabled ? "default" : "pointer",
+            }}
+          >
+            <span style={{ fontSize: 15 }}>{opt.icon}</span>
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -497,19 +525,18 @@ function BreastTimer({
   const statusLabel = status === "running" ? "Timing…" : status === "paused" ? "Paused" : "Ready to start";
 
   return (
-    <>
-      <div style={{ fontFamily: t.head, fontSize: 21, fontWeight: 700, textAlign: "center" }}>
-        Breastfeed
+    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+      <div>
+        <div style={{ textAlign: "center", margin: "22px 0 6px" }}>
+          <span style={{ fontFamily: t.head, fontSize: 52, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+            {fmtStopwatch(displayMs)}
+          </span>
+        </div>
+        <div style={{ textAlign: "center", color: t.muted, fontSize: 13, fontWeight: 600, marginBottom: 24 }}>
+          {statusLabel}
+        </div>
       </div>
-      <div style={{ textAlign: "center", margin: "22px 0 6px" }}>
-        <span style={{ fontFamily: t.head, fontSize: 52, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-          {fmtStopwatch(displayMs)}
-        </span>
-      </div>
-      <div style={{ textAlign: "center", color: t.muted, fontSize: 13, fontWeight: 600, marginBottom: 24 }}>
-        {statusLabel}
-      </div>
-      <div style={{ display: "flex", gap: 12 }}>
+      <div style={{ display: "flex", gap: 12, marginTop: "auto" }}>
         <button
           onClick={status === "running" ? pause : start}
           style={{
@@ -547,7 +574,7 @@ function BreastTimer({
           Stop & log
         </button>
       </div>
-    </>
+    </div>
   );
 }
 
