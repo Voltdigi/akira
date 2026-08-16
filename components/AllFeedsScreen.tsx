@@ -246,7 +246,7 @@ export default function AllFeedsScreen() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: 14 }}>
-                        {f.type === "bottle" ? "Bottle feed" : "Breast feed"}
+                        {f.type === "bottle" ? "Bottle feed" : "Breastfeed"}
                       </div>
                       <div style={{ fontSize: 12, color: t.muted, fontWeight: 600, marginTop: 1 }}>
                         {fmtTime(f.time, hour12)}

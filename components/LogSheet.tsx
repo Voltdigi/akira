@@ -84,7 +84,7 @@ export default function LogSheet(p: Props) {
         {p.flow === "choose" && (
           <>
             <div style={{ fontFamily: t.head, fontSize: 21, fontWeight: 700, textAlign: "center" }}>
-              How did you feed?
+              Log feed
             </div>
             <div style={{ textAlign: "center", color: t.muted, fontSize: 13, fontWeight: 600, margin: "4px 0 20px" }}>
               Pick a feed type to log
@@ -311,7 +311,7 @@ function parseMmss(raw: string): number | null {
   return null;
 }
 
-/** Editable "M:SS" duration display for the breast feed edit form. */
+/** Editable "M:SS" duration display for the breastfeed edit form. */
 function DurationInput({ sec, onChange }: { sec: number; onChange: (sec: number) => void }) {
   const [text, setText] = useState(fmtMmss(sec));
 
@@ -499,7 +499,7 @@ function BreastTimer({
   return (
     <>
       <div style={{ fontFamily: t.head, fontSize: 21, fontWeight: 700, textAlign: "center" }}>
-        Breast feed 🤱
+        Breastfeed
       </div>
       <div style={{ textAlign: "center", margin: "22px 0 6px" }}>
         <span style={{ fontFamily: t.head, fontSize: 52, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>

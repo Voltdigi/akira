@@ -83,13 +83,13 @@ export default function FeedTracker() {
   const stopBreast = (durationSec: number) => {
     addFeed("breast", { durationSec });
     close();
-    showToast(`Breast feed logged 💗 ${fmtDuration(durationSec)}`);
+    showToast(`Breastfeed logged 💗 ${fmtDuration(durationSec)}`);
   };
   const logBottle = () => {
     if (mlDraft <= 0) return;
     addFeed("bottle", { ml: mlDraft, isFormula: isFormulaDraft });
     close();
-    showToast("Bottle feed logged 🍼");
+    showToast("Bottle feed logged");
   };
   const saveEdit = () => {
     const f = feeds.find((x) => x.id === editId);
@@ -275,7 +275,7 @@ export default function FeedTracker() {
                     {f.type === "bottle" ? "🍼" : "🤱"}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{f.type === "bottle" ? "Bottle feed" : "Breast feed"}</div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{f.type === "bottle" ? "Bottle feed" : "Breastfeed"}</div>
                     <div style={{ fontSize: 12, color: t.muted, fontWeight: 600, marginTop: 1 }}>{fmtTime(f.time, hour12)}</div>
                   </div>
                   <div style={{ fontWeight: 700, fontSize: 14, color: t.accentDeep, textAlign: "right" }}>
@@ -353,7 +353,7 @@ export default function FeedTracker() {
           setEditDurationSec={setEditDurationSec}
           editIsBottle={editType === "bottle"}
           editIcon={editType === "bottle" ? "🍼" : "🤱"}
-          editTitle={editType === "bottle" ? "Bottle feed" : "Breast feed"}
+          editTitle={editType === "bottle" ? "Bottle feed" : "Breastfeed"}
           onChooseBottle={() => {
             setMlDraft(0);
             setIsFormulaDraft(false);
