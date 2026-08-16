@@ -86,8 +86,11 @@ export default function LogSheet(p: Props) {
           {p.flow === "log" && (
           <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
             <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-              <div style={{ fontFamily: t.head, fontSize: 21, fontWeight: 700, textAlign: "center", marginBottom: 16 }}>
+              <div style={{ fontFamily: t.head, fontSize: 21, fontWeight: 700, textAlign: "center", marginBottom: 4 }}>
                 Log feed
+              </div>
+              <div style={{ fontSize: 12, color: t.muted, fontWeight: 600, textAlign: "center", marginBottom: 18 }}>
+                {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} · {new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}
               </div>
 
               <div style={{ marginBottom: 22 }}>
