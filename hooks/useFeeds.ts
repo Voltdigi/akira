@@ -3,24 +3,36 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Feed, FeedType } from "@/lib/types";
 import { supabase } from "@/lib/supabaseClient";
+import { useChildContext } from "@/lib/ChildContext";
 
 const TABLE = "feeds";
 
 /**
- * Feed log backed by Supabase. No auth — one shared table, kept in sync
- * across devices via Realtime. `loaded` guards against a flash of empty
- * state before the initial fetch resolves.
+ * Feed log backed by Supabase, scoped to the active child profile.
+ * Kept in sync across devices via Realtime. `loaded` guards against
+ * a flash of empty state before the initial fetch resolves.
  */
 export function useFeeds() {
+  const { child, loaded: childLoaded } = useChildContext();
+  const childId = child?.id ?? null;
+
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    // If no child, don't fetch
+    if (!childId) {
+      setFeeds([]);
+      setLoaded(false);
+      return;
+    }
+
     let cancelled = false;
 
     supabase
       .from(TABLE)
-      .select("id, time, type, ml, is_formula, duration_sec")
+      .select("id, time, type, ml, is_formula, duration_sec, child_id")
+      .eq("child_id", childId)
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) console.error("Failed to load feeds:", error.message);
@@ -28,11 +40,12 @@ export function useFeeds() {
         setLoaded(true);
       });
 
+    const channelName = `feeds-changes-${childId}`;
     const channel = supabase
-      .channel("feeds-changes")
+      .channel(channelName)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: TABLE },
+        { event: "*", schema: "public", table: TABLE, filter: `child_id=eq.${childId}` },
         (payload) => {
           setFeeds((prev) => {
             if (payload.eventType === "DELETE") {
@@ -50,10 +63,15 @@ export function useFeeds() {
       cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [childId]);
 
   const addFeed = useCallback(
     (type: FeedType, opts: { ml?: number | null; isFormula?: boolean | null; durationSec?: number | null } = {}) => {
+      if (!childId) {
+        console.warn("No child selected, cannot add feed");
+        return;
+      }
+
       const feed: Feed = {
         id: crypto.randomUUID(),
         time: Date.now(),
@@ -61,6 +79,7 @@ export function useFeeds() {
         ml: type === "bottle" ? opts.ml ?? 0 : null,
         is_formula: type === "bottle" ? opts.isFormula ?? false : null,
         duration_sec: type === "breast" ? opts.durationSec ?? null : null,
+        child_id: childId,
       };
       setFeeds((prev) => [...prev, feed]);
       supabase
@@ -70,7 +89,7 @@ export function useFeeds() {
           if (error) console.error("Failed to save feed:", error.message);
         });
     },
-    []
+    [childId]
   );
 
   const deleteFeed = useCallback((id: string) => {

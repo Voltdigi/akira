@@ -11,4 +11,17 @@ export interface Feed {
   is_formula: boolean | null;
   /** Duration in seconds for breast feeds; null for bottle feeds. */
   duration_sec: number | null;
+  /** Child profile ID this feed belongs to. */
+  child_id: string;
+}
+
+export interface Child {
+  id: string;
+  user_id: string;
+  name: string;
+  birthdate: string | null; // "YYYY-MM-DD"
+  height_cm: number | null;
+  weight_kg: number | null;
+  created_at: string;
+  updated_at: string;
 }

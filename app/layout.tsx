@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
+import { AuthProvider } from "@/lib/AuthContext";
+import AuthGate from "@/components/AuthGate";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -28,7 +30,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={manrope.variable}>{children}</body>
+      <body className={manrope.variable}>
+        <AuthProvider>
+          <AuthGate>{children}</AuthGate>
+        </AuthProvider>
+      </body>
     </html>
   );
 }
