@@ -1,17 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Fredoka, Quicksand } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 
-const fredoka = Fredoka({
+const manrope = Manrope({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-fredoka",
-});
-
-const quicksand = Quicksand({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-quicksand",
+  variable: "--font-manrope",
 });
 
 export const metadata: Metadata = {
@@ -34,7 +28,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${fredoka.variable} ${quicksand.variable}`}>{children}</body>
+      <body className={manrope.variable}>{children}</body>
     </html>
   );
 }

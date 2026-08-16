@@ -18,8 +18,8 @@ export const theme = {
   iconBg: "#E3F0E3",
   danger: "#E0574F",
   shadow: "0 14px 32px rgba(47,107,79,.22)",
-  font: "var(--font-quicksand), system-ui, sans-serif",
-  head: "var(--font-fredoka), system-ui, sans-serif",
+  font: "var(--font-manrope), system-ui, sans-serif",
+  head: "var(--font-manrope), system-ui, sans-serif",
 } as const;
 
 export type Theme = typeof theme;

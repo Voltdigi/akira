@@ -14,7 +14,7 @@ body {
 body {
   min-height: 100dvh;
   background: #fbf3ea;
-  font-family: var(--font-quicksand), system-ui, sans-serif;
+  font-family: var(--font-manrope), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #4a3b33;
