@@ -33,6 +33,8 @@ export function useFeeds() {
       .from(TABLE)
       .select("id, time, type, ml, is_formula, duration_sec, child_id")
       .eq("child_id", childId)
+      .order("time", { ascending: false })
+      .limit(1000)
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) console.error("Failed to load feeds:", error.message);
