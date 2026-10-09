@@ -13,13 +13,14 @@ import { theme as t } from "@/lib/theme";
 import type { Feed } from "@/lib/types";
 import { formatAmount } from "@/lib/units";
 import {
-  applyHhmm,
+  applyDateAndTime,
   dateLabelFor,
   fmtDuration,
   fmtTime,
   greetingFor,
   timeSince,
   toHhmm,
+  toYyyyMmDd,
   todayStats,
   trend7,
 } from "@/lib/stats";
@@ -45,6 +46,7 @@ export default function FeedTracker() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editMl, setEditMl] = useState(120);
   const [editIsFormula, setEditIsFormula] = useState(false);
+  const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("12:00");
   const [editDurationSec, setEditDurationSec] = useState(0);
   const [editType, setEditType] = useState<Feed["type"]>("bottle");
@@ -81,6 +83,7 @@ export default function FeedTracker() {
     setEditMl(f.ml ?? 120);
     setEditIsFormula(f.is_formula ?? false);
     setEditType(f.type);
+    setEditDate(toYyyyMmDd(f.time));
     setEditTime(toHhmm(f.time));
     setEditDurationSec(f.duration_sec ?? 0);
     setFlow("edit");
@@ -100,7 +103,7 @@ export default function FeedTracker() {
   const saveEdit = () => {
     const f = feeds.find((x) => x.id === editId);
     if (!f || !editId) return close();
-    const patch: Partial<Feed> = { time: applyHhmm(f.time, editTime) };
+    const patch: Partial<Feed> = { time: applyDateAndTime(editDate, editTime) };
     if (editType === "bottle") {
       patch.ml = editMl;
       patch.is_formula = editIsFormula;
@@ -354,6 +357,8 @@ export default function FeedTracker() {
           setEditMl={setEditMl}
           editIsFormula={editIsFormula}
           setEditIsFormula={setEditIsFormula}
+          editDate={editDate}
+          setEditDate={setEditDate}
           editTime={editTime}
           setEditTime={setEditTime}
           editDurationSec={editDurationSec}

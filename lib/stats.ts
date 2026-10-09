@@ -65,11 +65,24 @@ export function toHhmm(ms: number): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+/** "YYYY-MM-DD" for an <input type="date">. */
+export function toYyyyMmDd(ms: number): string {
+  const d = new Date(ms);
+  return d.toISOString().split("T")[0];
+}
+
 /** Apply an "HH:MM" string to the date portion of an existing timestamp. */
 export function applyHhmm(baseMs: number, hhmm: string): number {
   const [h, m] = String(hhmm || "0:0").split(":").map(Number);
   const d = new Date(baseMs);
   d.setHours(h || 0, m || 0, 0, 0);
+  return d.getTime();
+}
+
+/** Apply a "YYYY-MM-DD" date string and "HH:MM" time string to a timestamp. */
+export function applyDateAndTime(dateStr: string, timeStr: string): number {
+  const [h, m] = String(timeStr || "0:0").split(":").map(Number);
+  const d = new Date(`${dateStr}T${String(h || 0).padStart(2, "0")}:${String(m || 0).padStart(2, "0")}:00`);
   return d.getTime();
 }
 

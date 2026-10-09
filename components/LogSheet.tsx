@@ -21,6 +21,8 @@ interface Props {
   setEditMl: (n: number) => void;
   editIsFormula: boolean;
   setEditIsFormula: (v: boolean) => void;
+  editDate: string;
+  setEditDate: (v: string) => void;
   editTime: string;
   setEditTime: (v: string) => void;
   editDurationSec: number;
@@ -185,6 +187,25 @@ export default function LogSheet(p: Props) {
                 <DurationInput sec={p.editDurationSec} onChange={p.setEditDurationSec} />
               </div>
             )}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: t.muted, marginBottom: 8, letterSpacing: 0.4 }}>DATE</div>
+              <input
+                type="date"
+                value={p.editDate}
+                onChange={(e) => p.setEditDate(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "13px 15px",
+                  borderRadius: 15,
+                  border: `2px solid ${t.border}`,
+                  background: t.surface2,
+                  color: t.text,
+                  fontSize: 17,
+                  fontWeight: 600,
+                  fontFamily: t.font,
+                }}
+              />
+            </div>
             <div style={{ display: "flex", gap: 12 }}>
               <button
                 onClick={p.onDelete}
