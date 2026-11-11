@@ -8,7 +8,8 @@ import type { Child } from "@/lib/types";
 interface ChildContextValue {
   child: Child | null;
   loaded: boolean;
-  updateChild: (patch: Partial<Pick<Child, "name" | "birthdate" | "height_cm" | "weight_kg">>) => void;
+  updateChild: (patch: Partial<Pick<Child, "name" | "birthdate" | "height_cm" | "weight_kg" | "photo_url">>) => void;
+  uploadPhoto: (file: File) => Promise<{ error: string | null }>;
 }
 
 const ChildContext = createContext<ChildContextValue | null>(null);

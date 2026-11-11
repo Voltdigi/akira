@@ -141,8 +141,8 @@ export default function FeedTracker() {
             <div style={{ fontFamily: t.head, fontSize: 23, fontWeight: 700, marginTop: 2 }}>{greetingFor(now)}</div>
           </div>
           <Link
-            href="/settings"
-            aria-label="Settings"
+            href="/profile"
+            aria-label="Profile"
             onClick={() => {
               const audio = new Audio(sound.src);
               audio.volume = volume;

@@ -126,3 +126,37 @@ create index if not exists feeds_child_id_idx on public.feeds(child_id);
 --
 -- -- Lock the column to prevent future unmigrated rows:
 -- -- alter table public.feeds alter column child_id set not null;
+
+-- ============================================================
+-- PHASE 3: Profile page (KAN-3) — photo upload support
+-- Safe to run any time; purely additive.
+-- ============================================================
+
+alter table public.children add column if not exists photo_url text;
+
+-- Storage bucket for child profile photos. Public read (photos are shown
+-- via plain <img src>, no signed URLs), writes restricted to the owning
+-- user's own folder (path convention: "<user_id>/<filename>").
+insert into storage.buckets (id, name, public)
+values ('child-photos', 'child-photos', true)
+on conflict (id) do nothing;
+
+drop policy if exists "child photos public read" on storage.objects;
+create policy "child photos public read" on storage.objects
+  for select to public
+  using (bucket_id = 'child-photos');
+
+drop policy if exists "child photos owner insert" on storage.objects;
+create policy "child photos owner insert" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'child-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "child photos owner update" on storage.objects;
+create policy "child photos owner update" on storage.objects
+  for update to authenticated
+  using (bucket_id = 'child-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "child photos owner delete" on storage.objects;
+create policy "child photos owner delete" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'child-photos' and (storage.foldername(name))[1] = auth.uid()::text);

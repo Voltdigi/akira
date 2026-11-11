@@ -5,11 +5,13 @@ import type { Child } from "@/lib/types";
 import { supabase } from "@/lib/supabaseClient";
 
 const TABLE = "children";
+const PHOTO_BUCKET = "child-photos";
 
 interface UseChildResult {
   child: Child | null;
   loaded: boolean;
-  updateChild: (patch: Partial<Pick<Child, "name" | "birthdate" | "height_cm" | "weight_kg">>) => void;
+  updateChild: (patch: Partial<Pick<Child, "name" | "birthdate" | "height_cm" | "weight_kg" | "photo_url">>) => void;
+  uploadPhoto: (file: File) => Promise<{ error: string | null }>;
 }
 
 /** Fetch and manage a single child profile for the authenticated user. */
@@ -75,7 +77,7 @@ export function useChild(userId: string | null): UseChildResult {
   }, [userId]);
 
   const updateChild = useCallback(
-    (patch: Partial<Pick<Child, "name" | "birthdate" | "height_cm" | "weight_kg">>) => {
+    (patch: Partial<Pick<Child, "name" | "birthdate" | "height_cm" | "weight_kg" | "photo_url">>) => {
       if (!child) return;
 
       // Optimistic update
@@ -93,5 +95,28 @@ export function useChild(userId: string | null): UseChildResult {
     [child]
   );
 
-  return { child, loaded, updateChild };
+  const uploadPhoto = useCallback(
+    async (file: File): Promise<{ error: string | null }> => {
+      if (!child || !userId) return { error: "No profile loaded yet" };
+
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${userId}/${child.id}-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(PHOTO_BUCKET)
+        .upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" });
+
+      if (uploadError) {
+        console.error("Failed to upload photo:", uploadError.message);
+        return { error: uploadError.message };
+      }
+
+      const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+      updateChild({ photo_url: data.publicUrl });
+      return { error: null };
+    },
+    [child, userId, updateChild]
+  );
+
+  return { child, loaded, updateChild, uploadPhoto };
 }

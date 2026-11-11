@@ -22,6 +22,7 @@ export interface Child {
   birthdate: string | null; // "YYYY-MM-DD"
   height_cm: number | null;
   weight_kg: number | null;
+  photo_url: string | null;
   created_at: string;
   updated_at: string;
 }
