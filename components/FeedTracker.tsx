@@ -9,6 +9,7 @@ import { useClockFormat } from "@/hooks/useClockFormat";
 import { useUnit } from "@/hooks/useUnit";
 import { useVolume } from "@/hooks/useVolume";
 import { useSoundChoice } from "@/hooks/useSoundChoice";
+import { useAlerts } from "@/hooks/useAlerts";
 import { theme as t } from "@/lib/theme";
 import type { Feed } from "@/lib/types";
 import { formatAmount } from "@/lib/units";
@@ -31,6 +32,7 @@ export default function FeedTracker() {
   const { unit } = useUnit();
   const { volume } = useVolume();
   const { sound } = useSoundChoice();
+  const { unseenCount } = useAlerts();
 
   // live "now" so the hero clock ticks
   const [now, setNow] = useState(() => Date.now());
@@ -140,7 +142,48 @@ export default function FeedTracker() {
             <div style={{ fontSize: 13, color: t.muted, fontWeight: 600 }}>{dateLabelFor(now)}</div>
             <div style={{ fontFamily: t.head, fontSize: 23, fontWeight: 700, marginTop: 2 }}>{greetingFor(now)}</div>
           </div>
-          <Link
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Link
+              href="/alerts"
+              aria-label="Alerts"
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: "50%",
+                background: t.iconBg,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 20,
+                textDecoration: "none",
+                position: "relative",
+              }}
+            >
+              🔔
+              {unseenCount > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 4,
+                    right: 4,
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: 999,
+                    background: t.danger,
+                    color: "#fff",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "0 3px",
+                  }}
+                >
+                  {unseenCount > 9 ? "9+" : unseenCount}
+                </span>
+              )}
+            </Link>
+            <Link
             href="/profile"
             aria-label="Profile"
             onClick={() => {
@@ -162,6 +205,7 @@ export default function FeedTracker() {
           >
             👶
           </Link>
+          </div>
         </div>
 
         {/* hero */}

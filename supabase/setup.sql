@@ -160,3 +160,69 @@ drop policy if exists "child photos owner delete" on storage.objects;
 create policy "child photos owner delete" on storage.objects
   for delete to authenticated
   using (bucket_id = 'child-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ============================================================
+-- PHASE 4: Alerts (KAN-4) — preferences + in-app alert log.
+-- Safe to run any time; purely additive.
+-- ============================================================
+
+create table if not exists public.alert_preferences (
+  child_id uuid primary key references public.children(id) on delete cascade,
+  push_enabled boolean not null default false,
+  missed_feed_enabled boolean not null default true,
+  missed_feed_threshold_hours numeric not null default 4,
+  -- Medication (KAN-2) and sleep (KAN-1) alert types don't have a chamber
+  -- to drive them yet. The columns exist now so the preferences UI can
+  -- show/persist a disabled "coming soon" toggle without a later schema
+  -- change; the check-missed-feeds job ignores them until those chambers
+  -- ship and a real trigger is wired up.
+  medication_enabled boolean not null default false,
+  sleep_enabled boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.alert_preferences enable row level security;
+
+create policy "select own alert prefs" on public.alert_preferences
+  for select to authenticated
+  using (exists (select 1 from public.children c where c.id = child_id and c.user_id = auth.uid()));
+create policy "insert own alert prefs" on public.alert_preferences
+  for insert to authenticated
+  with check (exists (select 1 from public.children c where c.id = child_id and c.user_id = auth.uid()));
+create policy "update own alert prefs" on public.alert_preferences
+  for update to authenticated
+  using (exists (select 1 from public.children c where c.id = child_id and c.user_id = auth.uid()))
+  with check (exists (select 1 from public.children c where c.id = child_id and c.user_id = auth.uid()));
+
+drop trigger if exists alert_preferences_set_updated_at on public.alert_preferences;
+create trigger alert_preferences_set_updated_at
+  before update on public.alert_preferences
+  for each row execute function public.set_updated_at();
+
+create table if not exists public.alerts (
+  id uuid primary key default gen_random_uuid(),
+  child_id uuid not null references public.children(id) on delete cascade,
+  type text not null check (type in ('missed_feed', 'medication', 'sleep')),
+  title text not null,
+  message text not null,
+  triggered_at timestamptz not null default now(),
+  seen boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists alerts_child_id_idx on public.alerts(child_id);
+
+alter table public.alerts enable row level security;
+
+create policy "select own alerts" on public.alerts
+  for select to authenticated
+  using (exists (select 1 from public.children c where c.id = child_id and c.user_id = auth.uid()));
+create policy "update own alerts" on public.alerts
+  for update to authenticated
+  using (exists (select 1 from public.children c where c.id = child_id and c.user_id = auth.uid()))
+  with check (exists (select 1 from public.children c where c.id = child_id and c.user_id = auth.uid()));
+
+-- Inserts come only from the server-side cron job (service role key,
+-- bypasses RLS) — no authenticated insert policy needed.
+
+alter publication supabase_realtime add table public.alerts;

@@ -11,6 +11,7 @@ import { useLengthUnit } from "@/hooks/useLengthUnit";
 import { useWeightUnit } from "@/hooks/useWeightUnit";
 import { useAuth } from "@/lib/AuthContext";
 import { useChildContext } from "@/lib/ChildContext";
+import { useAlertPreferences } from "@/hooks/useAlertPreferences";
 import { SOUND_OPTIONS } from "@/lib/sounds";
 import { theme as t } from "@/lib/theme";
 import { calculateAge } from "@/lib/child";
@@ -25,6 +26,11 @@ export default function SettingsScreen() {
   const { unit: weightUnit, setUnit: setWeightUnit, loaded: weightLoaded } = useWeightUnit();
   const { user, signOut } = useAuth();
   const { child, loaded: childLoaded, updateChild } = useChildContext();
+  const { prefs: alertPrefs, loaded: alertPrefsLoaded, updatePrefs: updateAlertPrefs, setPushEnabled } = useAlertPreferences(
+    child?.id ?? null
+  );
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
 
   const [nameDraft, setNameDraft] = useState(child?.name ?? "");
 
@@ -54,6 +60,14 @@ export default function SettingsScreen() {
     if (isNaN(numValue)) return;
     const kgValue = weightUnit === "lb" ? lbToKg(numValue) : numValue;
     updateChild({ weight_kg: kgValue });
+  };
+
+  const handlePushToggle = async (enabled: boolean) => {
+    setPushError(null);
+    setPushBusy(true);
+    const { error } = await setPushEnabled(enabled);
+    setPushBusy(false);
+    if (error) setPushError(error);
   };
 
   return (
@@ -260,6 +274,105 @@ export default function SettingsScreen() {
                 })}
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* alerts */}
+        <div style={{ fontSize: 12, fontWeight: 700, color: t.muted, letterSpacing: 0.4, margin: "6px 2px 8px" }}>
+          ALERTS
+        </div>
+        <div
+          style={{
+            background: t.surface,
+            border: `1px solid ${t.border}`,
+            borderRadius: 20,
+            padding: "16px 18px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+            marginBottom: 12,
+            opacity: alertPrefsLoaded ? 1 : 0.5,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>Push notifications</div>
+              <div style={{ fontSize: 12, color: t.muted, fontWeight: 600, marginTop: 2 }}>
+                Get alerts on this device, even when the app is closed
+              </div>
+            </div>
+            <ToggleSwitch
+              checked={!!alertPrefs?.push_enabled}
+              onChange={handlePushToggle}
+              disabled={!alertPrefsLoaded || pushBusy}
+            />
+          </div>
+          {pushError && (
+            <div style={{ fontSize: 12, color: t.danger, fontWeight: 600, marginTop: -8 }}>{pushError}</div>
+          )}
+
+          <div style={{ height: 1, background: t.border }} />
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>🍼 Missed feed</div>
+              <div style={{ fontSize: 12, color: t.muted, fontWeight: 600, marginTop: 2 }}>
+                Alert if no feed is logged for a while
+              </div>
+            </div>
+            <ToggleSwitch
+              checked={!!alertPrefs?.missed_feed_enabled}
+              onChange={(v) => updateAlertPrefs({ missed_feed_enabled: v })}
+              disabled={!alertPrefsLoaded}
+            />
+          </div>
+          {alertPrefs?.missed_feed_enabled && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={alertPrefs.missed_feed_threshold_hours}
+                onChange={(e) => {
+                  const hours = parseFloat(e.target.value);
+                  if (!isNaN(hours) && hours > 0) updateAlertPrefs({ missed_feed_threshold_hours: hours });
+                }}
+                style={{
+                  width: 70,
+                  border: `2px solid ${t.border}`,
+                  borderRadius: 15,
+                  background: t.surface2,
+                  color: t.text,
+                  padding: "10px 12px",
+                  fontFamily: t.font,
+                  fontSize: 15,
+                  boxSizing: "border-box",
+                }}
+              />
+              <span style={{ fontSize: 13, color: t.muted, fontWeight: 600 }}>hours since the last feed</span>
+            </div>
+          )}
+
+          <div style={{ height: 1, background: t.border }} />
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, opacity: 0.55 }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>💊 Medication due</div>
+              <div style={{ fontSize: 12, color: t.muted, fontWeight: 600, marginTop: 2 }}>
+                Chamber not built yet (KAN-2)
+              </div>
+            </div>
+            <ToggleSwitch checked={false} onChange={() => {}} disabled />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, opacity: 0.55 }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>😴 Sleep milestones</div>
+              <div style={{ fontSize: 12, color: t.muted, fontWeight: 600, marginTop: 2 }}>
+                Chamber not built yet (KAN-1)
+              </div>
+            </div>
+            <ToggleSwitch checked={false} onChange={() => {}} disabled />
           </div>
         </div>
 

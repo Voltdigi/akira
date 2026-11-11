@@ -15,6 +15,31 @@ export interface Feed {
   child_id: string;
 }
 
+export type AlertType = "missed_feed" | "medication" | "sleep";
+
+export interface AlertPreferences {
+  child_id: string;
+  push_enabled: boolean;
+  missed_feed_enabled: boolean;
+  missed_feed_threshold_hours: number;
+  /** Not yet actionable — no chamber exists to trigger these (KAN-2). */
+  medication_enabled: boolean;
+  /** Not yet actionable — no chamber exists to trigger these (KAN-1). */
+  sleep_enabled: boolean;
+  updated_at: string;
+}
+
+export interface AlertLog {
+  id: string;
+  child_id: string;
+  type: AlertType;
+  title: string;
+  message: string;
+  triggered_at: string;
+  seen: boolean;
+  created_at: string;
+}
+
 export interface Child {
   id: string;
   user_id: string;
