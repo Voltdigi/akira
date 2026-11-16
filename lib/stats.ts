@@ -52,7 +52,12 @@ export function trend7(feeds: Feed[]): TrendDay[] {
     day.setHours(0, 0, 0, 0);
     day.setDate(day.getDate() - d);
     const s = day.getTime();
-    const e = s + 86400000;
+    // Next calendar day via setDate, not `s + 86400000` - a DST transition
+    // day is 23h or 25h, not a clean 24h, which would otherwise mis-bucket
+    // any feed logged in that drifted hour.
+    const end = new Date(day);
+    end.setDate(end.getDate() + 1);
+    const e = end.getTime();
     const count = feeds.filter((f) => f.time >= s && f.time < e).length;
     out.push({ label: dl[day.getDay()], count, today: d === 0 });
   }
@@ -167,6 +172,17 @@ function addBuckets(d: Date, g: Granularity, n: number): Date {
 }
 
 /**
+ * The previous calendar day, via setDate rather than `ms - 86400000` - a
+ * fixed-ms subtraction lands on the wrong date whenever the day being
+ * subtracted is a DST transition day (23h/25h, not a clean 24h).
+ */
+function previousCalendarDay(d: Date): Date {
+  const c = new Date(d);
+  c.setDate(c.getDate() - 1);
+  return c;
+}
+
+/**
  * Calendar-day count between two local-midnight timestamps, via UTC-normalized
  * differencing rather than raw ms subtraction — a DST transition inside the
  * range would otherwise make the real elapsed time 23h/25h off from a whole
@@ -202,13 +218,13 @@ function bucketFullLabel(start: Date, end: Date, g: Granularity): string {
     case "day":
       return dayLabelFor(start.getTime());
     case "week": {
-      const endIncl = new Date(end.getTime() - 86400000);
+      const endIncl = previousCalendarDay(end);
       return `${MONTH_SHORT[start.getMonth()]} ${start.getDate()} – ${MONTH_SHORT[endIncl.getMonth()]} ${endIncl.getDate()}, ${endIncl.getFullYear()}`;
     }
     case "month":
       return `${MONTH_SHORT[start.getMonth()]} ${start.getFullYear()}`;
     case "quarter": {
-      const endIncl = new Date(end.getTime() - 86400000);
+      const endIncl = previousCalendarDay(end);
       return `Q${Math.floor(start.getMonth() / 3) + 1} ${start.getFullYear()} (${MONTH_SHORT[start.getMonth()]}–${MONTH_SHORT[endIncl.getMonth()]})`;
     }
     case "year":
@@ -217,7 +233,7 @@ function bucketFullLabel(start: Date, end: Date, g: Granularity): string {
 }
 
 function windowRangeLabel(firstStart: Date, lastEnd: Date, g: Granularity): string {
-  const endIncl = new Date(lastEnd.getTime() - 86400000);
+  const endIncl = previousCalendarDay(lastEnd);
   if (g === "day" || g === "week") {
     return `${MONTH_SHORT[firstStart.getMonth()]} ${firstStart.getDate()} – ${MONTH_SHORT[endIncl.getMonth()]} ${endIncl.getDate()}, ${endIncl.getFullYear()}`;
   }
