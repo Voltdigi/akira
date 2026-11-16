@@ -39,6 +39,17 @@ export async function disablePushForChild(childId: string): Promise<{ error: str
   try {
     const beams = getClient();
     if (!beams) return { error: null };
+    // push_enabled in the DB is account-wide, but Beams registration is
+    // per-device/per-browser - a device that never called .start() (e.g.
+    // this is a different browser than the one that first turned push on)
+    // has nothing to remove. Treat that as a no-op instead of surfacing
+    // "SDK not registered with Beams" as a user-facing error.
+    const state = await beams.getRegistrationState();
+    const notRegistered =
+      state === PusherPushNotifications.RegistrationState.PERMISSION_PROMPT_REQUIRED ||
+      state === PusherPushNotifications.RegistrationState.PERMISSION_DENIED ||
+      state === PusherPushNotifications.RegistrationState.PERMISSION_GRANTED_NOT_REGISTERED_WITH_BEAMS;
+    if (notRegistered) return { error: null };
     await beams.removeDeviceInterest(interestFor(childId));
     return { error: null };
   } catch (e) {
